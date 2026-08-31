@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel — Ñ - ÑÊMESIS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Chakra+Petch:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body class="pagina-login">
+  <div class="cartao-login">
+    <div class="core-mini"></div>
+    <h1>Ñ - ÑÊMESIS</h1>
+    <p>Painel de controle do bot. Entre com sua conta do Discord pra gerenciar os servidores onde você tem permissão de administrador.</p>
+    <a href="/login" class="botao botao-primario">Entrar com Discord</a>
+    <p id="mensagem-erro" class="mensagem-erro"></p>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const erro = params.get("erro");
+    if (erro) document.getElementById("mensagem-erro").textContent = "Não deu pra entrar: " + decodeURIComponent(erro);
+  </script>
+</body>
+</html>
