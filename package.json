@@ -1,0 +1,7 @@
+{
+  "name": "nemesis-dashboard",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Painel web do bot Ñ - ÑÊMESIS — login com Discord, gerencia tudo pelo site.",
+  "engines": { "node": ">=18" }
+}
