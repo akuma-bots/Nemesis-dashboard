@@ -1,5 +1,13 @@
 let servidorAtual = null;
 
+async function api(caminho, opcoes = {}) {
+  const resposta = await fetch(caminho, { ...opcoes, headers: { "Content-Type": "application/json", ...(opcoes.headers || {}) } });
+  if (resposta.status === 401) { window.location.href = "/"; throw new Error("não autenticado"); }
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.erro || "erro desconhecido");
+  return dados;
+}
+
 async function iniciar() {
   try {
     const { usuario, servidores } = await api("/api/me");
@@ -9,14 +17,6 @@ async function iniciar() {
     console.error(e);
     document.getElementById("lista-servidores").innerHTML = `<p style="color:var(--signal); font-size:0.82rem;">Erro ao carregar: ${e.message}</p>`;
   }
-}
-
-async function iniciar() {
-  try {
-    const { usuario, servidores } = await api("/api/me");
-    document.getElementById("nome-usuario").textContent = usuario.nome;
-    renderizarListaServidores(servidores);
-  } catch (e) { console.error(e); }
 }
 
 function renderizarListaServidores(servidores) {
@@ -373,5 +373,4 @@ function renderizarParcerias(d) {
   `;
   function renderLista(lista) {
     const container = document.getElementById("pc-lista");
-    container.innerHTML = lista.map((p) => `<div class="lista-item"><span class="info">${p.nome}</span><button data-nome="${p.nome}">remover</button></div>`).join("");
-    container.querySelectorAll("b
+    container.innerHTML = lista.map((p) => `<d
