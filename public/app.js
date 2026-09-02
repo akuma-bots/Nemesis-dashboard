@@ -534,10 +534,32 @@ function renderizarBackup(d) {
   el.innerHTML = `
     <p class="descricao-aba">Baixa um arquivo com todos os dados deste servidor (configurações, perfis, guerras, punições, denúncias, parcerias, vínculos Roblox). Não inclui tokens nem senhas.</p>
     <a class="botao botao-primario" id="bk-baixar" href="#">Baixar backup agora</a>
+
+    <div class="secao-titulo">Restaurar um backup</div>
+    <p class="descricao-aba">⚠️ Isso <strong>sobrescreve</strong> os dados atuais desses sistemas pelo que estiver no arquivo escolhido — qualquer coisa que mudou depois do backup é perdida.</p>
+    <div class="campo"><label>Arquivo de backup (.json)</label><input type="file" id="bk-arquivo" accept=".json,application/json"></div>
+    <button class="botao botao-perigo" id="bk-restaurar">Restaurar este backup</button>
   `;
   document.getElementById("bk-baixar").onclick = (e) => {
     e.preventDefault();
     window.location.href = `/api/backup-baixar?guildId=${servidorAtual}`;
+  };
+
+  document.getElementById("bk-restaurar").onclick = async () => {
+    const input = document.getElementById("bk-arquivo");
+    const arquivo = input.files[0];
+    if (!arquivo) return mostrarAviso("aba-backup", "Escolhe um arquivo primeiro.", "erro");
+
+    if (!confirm("Tem certeza? Isso vai sobrescrever os dados atuais deste servidor pelo conteúdo do backup.")) return;
+
+    try {
+      const texto = await arquivo.text();
+      const dados = JSON.parse(texto);
+      const r = await api("/api/backup-restaurar", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, dados }) });
+      mostrarAviso("aba-backup", `Restaurado: ${r.restaurados.join(", ")}`, "sucesso");
+    } catch (e) {
+      mostrarAviso("aba-backup", e.message.includes("JSON") ? "Esse arquivo não é um JSON válido." : e.message, "erro");
+    }
   };
 }
 
