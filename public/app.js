@@ -373,4 +373,172 @@ function renderizarParcerias(d) {
   `;
   function renderLista(lista) {
     const container = document.getElementById("pc-lista");
-    container.innerHTML = lista.map((p) => `<d
+    container.innerHTML = lista.map((p) => `<div class="lista-item"><span class="info">${p.nome}</span><button data-nome="${p.nome}">remover</button></div>`).join("");
+    container.querySelectorAll("button").forEach((btn) => {
+      btn.onclick = async () => {
+        const r = await api("/api/parceria-remove", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, nome: btn.dataset.nome }) });
+        renderLista(r.parcerias);
+      };
+    });
+  }
+  renderLista(d.parcerias);
+  document.getElementById("pc-adicionar").onclick = async () => {
+    try {
+      const r = await api("/api/parceria-add", { method: "POST", body: JSON.stringify({
+        guildId: servidorAtual,
+        nome: document.getElementById("pc-nome").value,
+        convite: document.getElementById("pc-convite").value,
+        descricao: document.getElementById("pc-descricao").value,
+        banner: document.getElementById("pc-banner").value || null,
+      })});
+      renderLista(r.parcerias);
+      mostrarAviso("aba-parcerias", "Publicado.", "sucesso");
+    } catch (e) { mostrarAviso("aba-parcerias", e.message, "erro"); }
+  };
+}
+
+// ---------------- Embeds ----------------
+function renderizarEmbeds(d) {
+  const { canais } = d;
+  const el = document.getElementById("aba-embeds");
+  el.innerHTML = `
+    <div class="campo"><label>Canal</label><select id="em-canal">${opcoesCanais(canais, [0], null)}</select></div>
+    <div class="campo"><label>Título</label><input id="em-titulo"></div>
+    <div class="campo"><label>Descrição (aceita **negrito**, • listas)</label><textarea id="em-descricao"></textarea></div>
+    <div class="linha-formulario">
+      <div class="campo"><label>Cor (hex)</label><input id="em-cor" placeholder="FF1A2E"></div>
+      <div class="campo"><label>Imagem/banner (URL, opcional)</label><input id="em-imagem"></div>
+    </div>
+    <div class="campo"><label>Rodapé (opcional)</label><input id="em-rodape"></div>
+    <div class="secao-titulo">Botões (opcional, até 2, link externo)</div>
+    <div class="linha-formulario">
+      <div class="campo"><label>Botão 1 — texto</label><input id="em-btn1-texto" placeholder="🌐 Nosso site"></div>
+      <div class="campo"><label>Botão 1 — link</label><input id="em-btn1-url"></div>
+    </div>
+    <div class="linha-formulario">
+      <div class="campo"><label>Botão 2 — texto</label><input id="em-btn2-texto"></div>
+      <div class="campo"><label>Botão 2 — link</label><input id="em-btn2-url"></div>
+    </div>
+    <button class="botao botao-primario" id="em-enviar">Enviar embed</button>
+  `;
+  document.getElementById("em-enviar").onclick = async () => {
+    const canalId = document.getElementById("em-canal").value;
+    if (!canalId) return mostrarAviso("aba-embeds", "Escolha um canal.", "erro");
+    try {
+      await api("/api/embed-send", { method: "POST", body: JSON.stringify({
+        guildId: servidorAtual, canalId,
+        titulo: document.getElementById("em-titulo").value,
+        descricao: document.getElementById("em-descricao").value,
+        cor: document.getElementById("em-cor").value,
+        imagem: document.getElementById("em-imagem").value,
+        rodape: document.getElementById("em-rodape").value,
+        botao1Texto: document.getElementById("em-btn1-texto").value,
+        botao1Url: document.getElementById("em-btn1-url").value,
+        botao2Texto: document.getElementById("em-btn2-texto").value,
+        botao2Url: document.getElementById("em-btn2-url").value,
+      })});
+      mostrarAviso("aba-embeds", "Enviado.", "sucesso");
+    } catch (e) { mostrarAviso("aba-embeds", e.message, "erro"); }
+  };
+}
+
+// ---------------- Roblox ----------------
+function renderizarRoblox(d) {
+  const { robloxGrupo, cargos } = d;
+  const el = document.getElementById("aba-roblox");
+  el.innerHTML = `
+    <p class="descricao-aba">Sincroniza cargos do Discord com o rank do grupo Roblox da gangue.</p>
+    <div class="campo"><label>ID do grupo Roblox</label><input id="rb-grupo-id" value="${robloxGrupo.grupo_id || ""}" placeholder="ex: 123456"></div>
+    <button class="botao botao-primario" id="rb-salvar-grupo">Salvar grupo</button>
+
+    <div class="secao-titulo">Mapear rank → cargo</div>
+    <div class="linha-formulario">
+      <div class="campo"><label>Nome exato do rank no Roblox</label><input id="rb-rank"></div>
+      <div class="campo"><label>Cargo do Discord</label><select id="rb-cargo">${opcoesCargos(cargos, null)}</select></div>
+    </div>
+    <button class="botao botao-primario" id="rb-mapear">Mapear</button>
+    <div id="rb-lista" style="margin-top:14px;"></div>
+  `;
+
+  function renderLista(mapeamentos) {
+    const container = document.getElementById("rb-lista");
+    const entradas = Object.entries(mapeamentos || {});
+    container.innerHTML = entradas.length
+      ? entradas.map(([rank, cargoId]) => `<div class="lista-item"><span class="info">${rank} → <@&${cargoId}></span><button data-rank="${rank}">remover</button></div>`).join("")
+      : `<p class="descricao-aba">Nenhum rank mapeado ainda.</p>`;
+    container.querySelectorAll("button").forEach((btn) => {
+      btn.onclick = async () => {
+        const r = await api("/api/roblox-config", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, acao: "desmapear", rankRoblox: btn.dataset.rank }) });
+        renderLista(r.config.mapeamentos);
+      };
+    });
+  }
+  renderLista(robloxGrupo.mapeamentos);
+
+  document.getElementById("rb-salvar-grupo").onclick = async () => {
+    try {
+      await api("/api/roblox-config", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, acao: "definir-grupo", grupoId: document.getElementById("rb-grupo-id").value }) });
+      mostrarAviso("aba-roblox", "Grupo salvo.", "sucesso");
+    } catch (e) { mostrarAviso("aba-roblox", e.message, "erro"); }
+  };
+  document.getElementById("rb-mapear").onclick = async () => {
+    const rank = document.getElementById("rb-rank").value;
+    const cargoId = document.getElementById("rb-cargo").value;
+    if (!rank || !cargoId) return mostrarAviso("aba-roblox", "Preenche o rank e o cargo.", "erro");
+    try {
+      const r = await api("/api/roblox-config", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, acao: "mapear", rankRoblox: rank, cargoId }) });
+      renderLista(r.config.mapeamentos);
+      mostrarAviso("aba-roblox", "Mapeado.", "sucesso");
+    } catch (e) { mostrarAviso("aba-roblox", e.message, "erro"); }
+  };
+}
+
+// ---------------- Sorteios ----------------
+function renderizarSorteios(d) {
+  const { canais, sorteios } = d;
+  const el = document.getElementById("aba-sorteios");
+  el.innerHTML = `
+    <div class="campo"><label>Canal</label><select id="so-canal">${opcoesCanais(canais, [0], null)}</select></div>
+    <div class="campo"><label>Prêmio</label><input id="so-premio"></div>
+    <div class="linha-formulario">
+      <div class="campo"><label>Duração (minutos)</label><input type="number" id="so-duracao" value="60"></div>
+      <div class="campo"><label>Nº de vencedores</label><input type="number" id="so-vencedores" value="1"></div>
+    </div>
+    <button class="botao botao-primario" id="so-criar">Criar sorteio</button>
+    <div class="secao-titulo">Sorteios em andamento</div>
+    <div id="so-lista"></div>
+  `;
+  const lista = document.getElementById("so-lista");
+  lista.innerHTML = sorteios.length
+    ? sorteios.map((s) => `<div class="lista-item"><span class="info">${s.premio} — ${s.participantes.length} participante(s), termina <t:${s.fim}:R></span></div>`).join("")
+    : `<p class="descricao-aba">Nenhum sorteio ativo no momento.</p>`;
+
+  document.getElementById("so-criar").onclick = async () => {
+    const canalId = document.getElementById("so-canal").value;
+    if (!canalId) return mostrarAviso("aba-sorteios", "Escolha um canal.", "erro");
+    try {
+      await api("/api/sorteio-criar", { method: "POST", body: JSON.stringify({
+        guildId: servidorAtual, canalId,
+        premio: document.getElementById("so-premio").value,
+        duracaoMinutos: document.getElementById("so-duracao").value,
+        vencedores: document.getElementById("so-vencedores").value,
+      })});
+      mostrarAviso("aba-sorteios", "Sorteio criado! O bot sorteia sozinho quando o tempo acabar.", "sucesso");
+    } catch (e) { mostrarAviso("aba-sorteios", e.message, "erro"); }
+  };
+}
+
+// ---------------- Backup ----------------
+function renderizarBackup(d) {
+  const el = document.getElementById("aba-backup");
+  el.innerHTML = `
+    <p class="descricao-aba">Baixa um arquivo com todos os dados deste servidor (configurações, perfis, guerras, punições, denúncias, parcerias, vínculos Roblox). Não inclui tokens nem senhas.</p>
+    <a class="botao botao-primario" id="bk-baixar" href="#">Baixar backup agora</a>
+  `;
+  document.getElementById("bk-baixar").onclick = (e) => {
+    e.preventDefault();
+    window.location.href = `/api/backup-baixar?guildId=${servidorAtual}`;
+  };
+}
+
+iniciar();
