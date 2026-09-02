@@ -27,6 +27,15 @@
     </div>
   </div>
 
+  <script>
+    window.onerror = function (msg, url, linha, coluna, erro) {
+      var el = document.getElementById('lista-servidores');
+      if (el) {
+        el.innerHTML = '<p style="color:#ff1a2e; font-size:0.7rem; word-break:break-all; white-space:pre-wrap;">ERRO NO APP.JS:\n' + msg + '\n(linha ' + linha + ', coluna ' + coluna + ')</p>';
+      }
+      return false;
+    };
+  </script>
   <script src="/app.js"></script>
 </body>
 </html>
