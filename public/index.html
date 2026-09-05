@@ -3,22 +3,387 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel — Ñ - ÑÊMESIS</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Chakra+Petch:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<title>Ñ - ÑÊMESIS // Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#080808;
+    --panel:#0f0f10;
+    --panel-2:#151516;
+    --blood:#8B0000;
+    --signal:#C1121F;
+    --signal-soft: rgba(193,18,31,0.35);
+    --steel:#9a9a9a;
+    --white:#eaeaea;
+    --line: rgba(193,18,31,0.22);
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--void);
+    color:var(--white);
+    font-family:'Rajdhani', sans-serif;
+    overflow-x:hidden;
+  }
+  ::selection{ background:var(--signal); color:var(--void); }
+  a{ color:inherit; text-decoration:none; }
+  .wordmark{ font-family:'Audiowide', sans-serif; letter-spacing:0.04em; }
+
+  body::before{
+    content:'';
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(139,0,0,0.10), transparent 55%),
+      radial-gradient(ellipse at 85% 30%, rgba(193,18,31,0.06), transparent 45%),
+      repeating-linear-gradient(115deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+  }
+
+  header, main, footer{ position:relative; z-index:2; }
+
+  nav{
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 6vw;
+    background:linear-gradient(to bottom, rgba(8,8,8,0.95), rgba(8,8,8,0));
+  }
+  .marca-nav{ font-family:'Audiowide'; font-size:0.95rem; letter-spacing:0.06em; }
+  .nav-links{ display:flex; gap:30px; font-size:0.78rem; letter-spacing:0.08em; color:var(--steel); text-transform:uppercase; }
+  .nav-links a:hover{ color:var(--signal); }
+  @media (max-width:680px){ .nav-links{ display:none; } }
+
+  .hero{
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:140px 6vw 80px; position:relative;
+  }
+  #particulas{ position:absolute; inset:0; z-index:0; opacity:0.6; }
+  .lua{
+    position:absolute; top:8%; right:8%; width:340px; height:340px; border-radius:50%;
+    background:radial-gradient(circle at 38% 32%, #ff2d3d 0%, var(--signal) 30%, var(--blood) 62%, transparent 78%);
+    filter:blur(2px); opacity:0.5; z-index:0;
+    box-shadow:0 0 140px 40px rgba(139,0,0,0.35);
+  }
+  @media (max-width:680px){ .lua{ width:220px; height:220px; top:4%; right:-40px; } }
+
+  .hero-conteudo{ position:relative; z-index:2; max-width:760px; }
+  .eyebrow{ font-size:0.75rem; letter-spacing:0.35em; color:var(--signal); margin-bottom:26px; }
+  h1.wordmark{
+    font-size:clamp(2.4rem, 8vw, 5.4rem); line-height:1.05; color:var(--white);
+    text-shadow:0 0 40px var(--signal-soft), 0 0 90px rgba(139,0,0,0.25);
+  }
+  .subtitulo{ margin-top:26px; color:var(--steel); font-size:1.05rem; line-height:1.65; max-width:540px; margin-left:auto; margin-right:auto; }
+  .subtitulo strong{ color:var(--white); font-weight:600; }
+
+  .cta-row{ display:flex; gap:16px; margin-top:44px; flex-wrap:wrap; justify-content:center; }
+  .btn{
+    font-family:'Rajdhani'; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;
+    font-size:0.85rem; padding:15px 32px; cursor:pointer; border:1px solid var(--signal);
+    background:transparent; color:var(--white); transition:all .25s;
+  }
+  .btn-primario{ background:var(--signal); color:#080808; box-shadow:0 0 28px var(--signal-soft); }
+  .btn-primario:hover{ background:#e0182a; box-shadow:0 0 44px var(--signal-soft); transform:translateY(-2px); }
+  .btn-fantasma:hover{ background:rgba(193,18,31,0.08); transform:translateY(-2px); }
+
+  section{ padding:120px 6vw; max-width:1180px; margin:0 auto; }
+  .cabecalho-secao{ margin-bottom:56px; max-width:640px; }
+  .cabecalho-secao h2{ font-family:'Audiowide'; font-size:clamp(1.5rem,3.2vw,2.3rem); line-height:1.3; }
+  .cabecalho-secao p{ color:var(--steel); margin-top:16px; line-height:1.6; }
+
+  .grade-sistemas{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .card-sistema{ background:var(--panel); padding:36px 30px; transition:background .25s; }
+  .card-sistema:hover{ background:var(--panel-2); }
+  .card-sistema .icone{ font-size:1.6rem; margin-bottom:18px; display:block; filter:drop-shadow(0 0 10px var(--signal-soft)); }
+  .card-sistema h3{ font-family:'Audiowide'; font-size:0.95rem; margin-bottom:10px; letter-spacing:0.02em; }
+  .card-sistema p{ color:var(--steel); font-size:0.88rem; line-height:1.55; }
+
+  .painel-preview{ display:flex; justify-content:center; }
+  .painel-mock{
+    width:100%; max-width:520px; border:1px solid var(--line); background:var(--panel);
+    box-shadow:0 0 60px rgba(139,0,0,0.12);
+  }
+  .painel-topo{
+    display:flex; align-items:center; gap:10px; padding:16px 22px; border-bottom:1px solid var(--line);
+  }
+  .painel-topo .ponto{ width:8px; height:8px; border-radius:50%; background:var(--signal); box-shadow:0 0 8px var(--signal); }
+  .painel-topo span{ font-family:'Audiowide'; font-size:0.78rem; letter-spacing:0.04em; }
+  .painel-corpo{ padding:26px 22px; }
+  .painel-servidor{ font-size:0.72rem; color:var(--steel); letter-spacing:0.1em; margin-bottom:4px; }
+  .painel-servidor strong{ display:block; color:var(--white); font-size:1.1rem; font-family:'Audiowide'; margin-top:4px; letter-spacing:0.02em; }
+  .painel-metricas{ margin-top:26px; display:flex; flex-direction:column; gap:0; border-top:1px solid var(--line); }
+  .painel-linha{ display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--line); }
+  .painel-linha .rotulo{ display:flex; align-items:center; gap:10px; color:var(--steel); font-size:0.9rem; }
+  .painel-linha .valor{ font-family:'Audiowide'; font-size:1rem; color:var(--white); }
+
+  .etapas{ display:flex; gap:0; flex-wrap:wrap; }
+  .etapa{ flex:1 1 220px; position:relative; padding:28px 24px 28px 0; }
+  .etapa:not(:last-child)::after{ content:'→'; position:absolute; right:-2px; top:38px; color:var(--signal); font-size:1.2rem; }
+  .etapa .numero{ font-family:'Audiowide'; color:var(--signal); font-size:0.85rem; margin-bottom:14px; }
+  .etapa h4{ font-family:'Audiowide'; font-size:0.95rem; margin-bottom:10px; }
+  .etapa p{ color:var(--steel); font-size:0.85rem; line-height:1.55; }
+  @media (max-width:760px){ .etapa:not(:last-child)::after{ content:'↓'; right:auto; left:0; top:auto; bottom:0; } }
+
+  .tech-titulo{ font-family:'Audiowide'; font-size:clamp(1.4rem,3vw,2.1rem); text-align:center; margin-bottom:64px; line-height:1.4; }
+  .tech-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:36px; }
+  .tech-item{ text-align:center; }
+  .tech-item .icone{ font-size:1.5rem; margin-bottom:14px; display:block; }
+  .tech-item h4{ font-family:'Audiowide'; font-size:0.82rem; letter-spacing:0.03em; margin-bottom:8px; }
+  .tech-item p{ color:var(--steel); font-size:0.82rem; line-height:1.5; }
+
+  .arvore{ display:flex; flex-direction:column; align-items:center; }
+  .no-raiz{
+    font-family:'Audiowide'; font-size:1.1rem; padding:18px 34px; border:1px solid var(--signal);
+    background:var(--panel); box-shadow:0 0 30px var(--signal-soft); letter-spacing:0.03em;
+  }
+  .tronco{ width:1px; height:50px; background:linear-gradient(to bottom, var(--signal), var(--line)); }
+  .galhos{ position:relative; width:100%; max-width:900px; }
+  .barra-horizontal{ height:1px; background:var(--line); margin:0 auto; }
+  .nos-filhos{ display:flex; justify-content:space-between; gap:16px; margin-top:0; flex-wrap:wrap; }
+  .coluna-no{ display:flex; flex-direction:column; align-items:center; flex:1; min-width:140px; }
+  .galho-vertical{ width:1px; height:36px; background:var(--line); }
+  .no-filho{
+    font-family:'Rajdhani'; font-weight:600; font-size:0.85rem; letter-spacing:0.04em; text-transform:uppercase;
+    padding:14px 18px; border:1px solid var(--line); background:var(--panel); text-align:center; width:100%;
+    transition:all .2s;
+  }
+  .no-filho:hover{ border-color:var(--signal); box-shadow:0 0 20px var(--signal-soft); }
+  @media (max-width:760px){
+    .nos-filhos{ flex-direction:column; align-items:center; }
+    .coluna-no{ width:100%; max-width:280px; }
+  }
+
+  footer{
+    border-top:1px solid var(--line); padding:40px 6vw; display:flex; justify-content:space-between;
+    align-items:center; flex-wrap:wrap; gap:14px; font-size:0.72rem; color:var(--steel); letter-spacing:0.04em;
+  }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
 </head>
-<body class="pagina-login">
-  <div class="cartao-login">
-    <div class="core-mini"></div>
-    <h1>Ñ - ÑÊMESIS</h1>
-    <p>Painel de controle do bot. Entre com sua conta do Discord pra gerenciar os servidores onde você tem permissão de administrador.</p>
-    <a href="/login" class="botao botao-primario">Entrar com Discord</a>
-    <p id="mensagem-erro" class="mensagem-erro"></p>
+<body>
+
+<nav>
+  <div class="marca-nav wordmark">Ñ - ÑÊMESIS</div>
+  <div class="nav-links">
+    <a href="#sistemas">Sistemas</a>
+    <a href="#painel">Painel</a>
+    <a href="#funciona">Como funciona</a>
+    <a href="#ecossistema">Ecossistema</a>
+    <a href="/login.html">Painel Admin</a>
   </div>
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const erro = params.get("erro");
-    if (erro) document.getElementById("mensagem-erro").textContent = "Não deu pra entrar: " + decodeURIComponent(erro);
-  </script>
+</nav>
+
+<main>
+  <section class="hero">
+    <canvas id="particulas"></canvas>
+    <div class="lua"></div>
+    <div class="hero-conteudo">
+      <div class="eyebrow">SISTEMA DE ADMINISTRAÇÃO NÊMESIS</div>
+      <h1 class="wordmark">Ñ - ÑÊMESIS</h1>
+      <p class="subtitulo">
+        <strong>NÊMESIS BOT.</strong> Tecnologia desenvolvida para administrar, organizar e conectar
+        toda a estrutura da NÊMESIS — do atendimento à competição, num só sistema.
+      </p>
+      <div class="cta-row">
+        <a href="#" class="btn btn-primario" id="btn-convidar">Convidar Bot</a>
+        <a href="#" class="btn btn-fantasma" id="btn-discord">Entrar no Discord</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="sistemas">
+    <div class="cabecalho-secao">
+      <h2>Seis sistemas, uma estrutura só</h2>
+      <p>Cada módulo cobre uma parte da operação da NÊMESIS, e todos conversam entre si.</p>
+    </div>
+    <div class="grade-sistemas">
+      <div class="card-sistema">
+        <span class="icone">🎫</span>
+        <h3>TICKETS</h3>
+        <p>Atendimento e suporte automatizado, com canal privado pra cada conversa.</p>
+      </div>
+      <div class="card-sistema">
+        <span class="icone">🛡️</span>
+        <h3>MODERAÇÃO</h3>
+        <p>Ferramentas pra manter a comunidade organizada, com registro de cada ação.</p>
+      </div>
+      <div class="card-sistema">
+        <span class="icone">📈</span>
+        <h3>RANK UP</h3>
+        <p>Gerenciamento da progressão dos membros, por XP e patente.</p>
+      </div>
+      <div class="card-sistema">
+        <span class="icone">⚔️</span>
+        <h3>COMPETITIVO</h3>
+        <p>Rankings, guerras, eventos e resultados — tudo registrado por temporada.</p>
+      </div>
+      <div class="card-sistema">
+        <span class="icone">👥</span>
+        <h3>RECRUTAMENTO</h3>
+        <p>Organização das inscrições e da entrada de novos membros.</p>
+      </div>
+      <div class="card-sistema">
+        <span class="icone">📋</span>
+        <h3>LOGS</h3>
+        <p>Registro das principais ações do servidor, sempre visível pra equipe.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="painel">
+    <div class="cabecalho-secao" style="margin-left:auto; margin-right:auto; text-align:center;">
+      <h2>O painel por trás da operação</h2>
+      <p style="margin-left:auto; margin-right:auto;">Gerencie tudo pelo navegador, sem digitar comando nenhum.</p>
+    </div>
+    <div class="painel-preview">
+      <div class="painel-mock">
+        <div class="painel-topo">
+          <span class="ponto"></span>
+          <span class="wordmark">Ñ - ÑÊMESIS BOT</span>
+        </div>
+        <div class="painel-corpo">
+          <div class="painel-servidor">SERVIDOR<strong>NÊMESIS</strong></div>
+          <div class="painel-metricas">
+            <div class="painel-linha"><span class="rotulo">👥 Membros</span><span class="valor" id="m-membros">0</span></div>
+            <div class="painel-linha"><span class="rotulo">🎫 Tickets</span><span class="valor" id="m-tickets">0</span></div>
+            <div class="painel-linha"><span class="rotulo">⚔️ Eventos</span><span class="valor" id="m-eventos">0</span></div>
+            <div class="painel-linha"><span class="rotulo">📈 Rank Up</span><span class="valor" id="m-rankup">0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="funciona">
+    <div class="cabecalho-secao">
+      <h2>Como funciona</h2>
+    </div>
+    <div class="etapas">
+      <div class="etapa">
+        <div class="numero">01</div>
+        <h4>ADICIONE</h4>
+        <p>Adicione o NÊMESIS BOT ao seu servidor.</p>
+      </div>
+      <div class="etapa">
+        <div class="numero">02</div>
+        <h4>CONFIGURE</h4>
+        <p>Configure os sistemas de acordo com sua comunidade.</p>
+      </div>
+      <div class="etapa">
+        <div class="numero">03</div>
+        <h4>GERENCIE</h4>
+        <p>Utilize as ferramentas pra administrar tudo de forma simples.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="tecnologia">
+    <div class="tech-titulo">Um sistema. Vários recursos.</div>
+    <div class="tech-grid">
+      <div class="tech-item"><span class="icone">⚡</span><h4>PERFORMANCE</h4><p>Resposta rápida, sem travar a operação.</p></div>
+      <div class="tech-item"><span class="icone">🔒</span><h4>SEGURANÇA</h4><p>Cada ação verificada por permissão.</p></div>
+      <div class="tech-item"><span class="icone">🤖</span><h4>AUTOMAÇÃO</h4><p>Tarefas repetitivas resolvidas sozinhas.</p></div>
+      <div class="tech-item"><span class="icone">⚙️</span><h4>CONFIGURAÇÃO</h4><p>Ajustada pela sua comunidade, do seu jeito.</p></div>
+      <div class="tech-item"><span class="icone">📊</span><h4>SISTEMAS INTEGRADOS</h4><p>Tudo conectado ao mesmo painel.</p></div>
+    </div>
+  </section>
+
+  <section id="ecossistema">
+    <div class="cabecalho-secao" style="margin-left:auto; margin-right:auto; text-align:center;">
+      <h2>O ecossistema NÊMESIS</h2>
+      <p style="margin-left:auto; margin-right:auto;">O bot é uma peça de uma estrutura maior.</p>
+    </div>
+    <div class="arvore">
+      <div class="no-raiz wordmark">NÊMESIS</div>
+      <div class="tronco"></div>
+      <div class="galhos">
+        <div class="barra-horizontal"></div>
+        <div class="nos-filhos">
+          <div class="coluna-no"><div class="galho-vertical"></div><div class="no-filho">Discord</div></div>
+          <div class="coluna-no"><div class="galho-vertical"></div><div class="no-filho">Bot</div></div>
+          <div class="coluna-no"><div class="galho-vertical"></div><div class="no-filho">Website</div></div>
+          <div class="coluna-no"><div class="galho-vertical"></div><div class="no-filho">Roblox</div></div>
+          <div class="coluna-no"><div class="galho-vertical"></div><div class="no-filho">Divisões</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wordmark">Ñ - ÑÊMESIS</div>
+  <div>SISTEMA DE ADMINISTRAÇÃO — TRANSMISSÃO CRIPTOGRAFADA</div>
+</footer>
+
+<script>
+document.getElementById('btn-convidar').addEventListener('click', function(e){
+  e.preventDefault();
+  alert('Troca esse botão pelo link real de convite do bot (OAuth2 URL Generator no Discord Developer Portal).');
+});
+document.getElementById('btn-discord').addEventListener('click', function(e){
+  e.preventDefault();
+  alert('Troca esse botão pelo link de convite do servidor NÊMESIS no Discord.');
+});
+
+function contarAte(id, alvo, duracaoMs){
+  const el = document.getElementById(id);
+  const inicio = performance.now();
+  function passo(agora){
+    const progresso = Math.min((agora - inicio) / duracaoMs, 1);
+    el.textContent = Math.floor(progresso * alvo).toLocaleString('pt-BR');
+    if(progresso < 1) requestAnimationFrame(passo);
+  }
+  requestAnimationFrame(passo);
+}
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(reduceMotion){
+  document.getElementById('m-membros').textContent = '1.284';
+  document.getElementById('m-tickets').textContent = '12';
+  document.getElementById('m-eventos').textContent = '08';
+  document.getElementById('m-rankup').textContent = '24';
+} else {
+  contarAte('m-membros', 1284, 1400);
+  contarAte('m-tickets', 12, 1000);
+  contarAte('m-eventos', 8, 900);
+  contarAte('m-rankup', 24, 1200);
+}
+
+const canvas = document.getElementById('particulas');
+const ctx = canvas.getContext('2d');
+let w, h, nos = [];
+
+function redimensionar(){
+  w = canvas.width = canvas.parentElement.offsetWidth;
+  h = canvas.height = canvas.parentElement.offsetHeight;
+}
+redimensionar();
+window.addEventListener('resize', redimensionar);
+
+const QTD = Math.min(50, Math.floor((window.innerWidth * window.innerHeight) / 30000));
+for(let i=0;i<QTD;i++){
+  nos.push({ x: Math.random()*w, y: Math.random()*h, vx:(Math.random()-0.5)*0.12, vy:(Math.random()-0.5)*0.12 });
+}
+
+function desenhar(){
+  ctx.clearRect(0,0,w,h);
+  nos.forEach(n=>{
+    n.x += n.vx; n.y += n.vy;
+    if(n.x<0||n.x>w) n.vx*=-1;
+    if(n.y<0||n.y>h) n.vy*=-1;
+    ctx.fillStyle = 'rgba(193,18,31,0.55)';
+    ctx.beginPath(); ctx.arc(n.x, n.y, 1.4, 0, Math.PI*2); ctx.fill();
+  });
+  for(let i=0;i<nos.length;i++){
+    for(let j=i+1;j<nos.length;j++){
+      const d = Math.hypot(nos[i].x-nos[j].x, nos[i].y-nos[j].y);
+      if(d < 130){
+        ctx.strokeStyle = `rgba(193,18,31,${0.12*(1-d/130)})`;
+        ctx.beginPath(); ctx.moveTo(nos[i].x,nos[i].y); ctx.lineTo(nos[j].x,nos[j].y); ctx.stroke();
+      }
+    }
+  }
+  if(!reduceMotion) requestAnimationFrame(desenhar);
+}
+desenhar();
+</script>
 </body>
-</html>
+  </html>
