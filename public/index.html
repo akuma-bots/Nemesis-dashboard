@@ -184,8 +184,8 @@
         toda a estrutura da NÊMESIS — do atendimento à competição, num só sistema.
       </p>
       <div class="cta-row">
-        <a href="#" class="btn btn-primario" id="btn-convidar">Convidar Bot</a>
-        <a href="#" class="btn btn-fantasma" id="btn-discord">Entrar no Discord</a>
+        <a href="https://discord.com/oauth2/authorize?client_id=1530272683525410897" class="btn btn-primario" target="_blank" rel="noopener">Convidar Bot</a>
+        <a href="https://discord.gg/ZcRQHjZzQU" class="btn btn-fantasma" target="_blank" rel="noopener">Entrar no Discord</a>
       </div>
     </div>
   </section>
@@ -315,15 +315,6 @@
 </footer>
 
 <script>
-document.getElementById('btn-convidar').addEventListener('click', function(e){
-  e.preventDefault();
-  alert('https://discord.com/oauth2/authorize?client_id=1530272683525410897&permissions=8&integration_type=0&scope=bot+applications.commands');
-});
-document.getElementById('btn-discord').addEventListener('click', function(e){
-  e.preventDefault();
-  alert('https://discord.gg/ZcRQHjZzQU');
-});
-
 function contarAte(id, alvo, duracaoMs){
   const el = document.getElementById(id);
   const inicio = performance.now();
@@ -386,4 +377,4 @@ function desenhar(){
 desenhar();
 </script>
 </body>
-  </html>
+      </html>
