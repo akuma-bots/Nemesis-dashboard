@@ -1,5 +1,15 @@
 let servidorAtual = null;
 
+function escaparHtml(texto) {
+  return String(texto ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[c]));
+}
+
 async function api(caminho, opcoes = {}) {
   const resposta = await fetch(caminho, { ...opcoes, headers: { "Content-Type": "application/json", ...(opcoes.headers || {}) } });
   if (resposta.status === 401) { window.location.href = "/"; throw new Error("não autenticado"); }
@@ -15,7 +25,7 @@ async function iniciar() {
     renderizarListaServidores(servidores);
   } catch (e) {
     console.error(e);
-    document.getElementById("lista-servidores").innerHTML = `<p style="color:var(--signal); font-size:0.82rem;">Erro ao carregar: ${e.message}</p>`;
+    document.getElementById("lista-servidores").innerHTML = `<p style="color:var(--signal); font-size:0.82rem;">Erro ao carregar: ${escaparHtml(e.message)}</p>`;
   }
 }
 
@@ -27,7 +37,7 @@ function renderizarListaServidores(servidores) {
     const div = document.createElement("div");
     div.className = "item-servidor";
     div.id = `servidor-${s.id}`;
-    div.innerHTML = `${s.icone ? `<img src="${s.icone}">` : `<div class="sem-icone"></div>`}<div><div>${s.nome}</div>${!s.bot_presente ? `<div class="tag-ausente">bot não está aqui</div>` : ""}</div>`;
+    div.innerHTML = `${s.icone ? `<img src="${escaparHtml(s.icone)}">` : `<div class="sem-icone"></div>`}<div><div>${escaparHtml(s.nome)}</div>${!s.bot_presente ? `<div class="tag-ausente">bot não está aqui</div>` : ""}</div>`;
     div.onclick = () => selecionarServidor(s.id, s.nome, s.bot_presente);
     container.appendChild(div);
   });
@@ -42,7 +52,7 @@ async function selecionarServidor(guildId, nome, botPresente) {
   conteudo.innerHTML = "<p style='color:var(--steel)'>Carregando...</p>";
 
   if (!botPresente) {
-    conteudo.innerHTML = `<div class="card-bot-ausente"><h3>O bot não está em "${nome}"</h3><p>Convide o bot pro servidor primeiro, depois volte aqui.</p></div>`;
+    conteudo.innerHTML = `<div class="card-bot-ausente"><h3>O bot não está em "${escaparHtml(nome)}"</h3><p>Convide o bot pro servidor primeiro, depois volte aqui.</p></div>`;
     return;
   }
 
@@ -50,15 +60,15 @@ async function selecionarServidor(guildId, nome, botPresente) {
     const dados = await api(`/api/guild-detail?guildId=${guildId}`);
     renderizarPainel(dados);
   } catch (e) {
-    conteudo.innerHTML = `<p class="aviso erro">Erro ao carregar: ${e.message}</p>`;
+    conteudo.innerHTML = `<p class="aviso erro">Erro ao carregar: ${escaparHtml(e.message)}</p>`;
   }
 }
 
 function opcoesCanais(canais, tipos, valorAtual) {
-  return `<option value="">— nenhum —</option>` + canais.filter((c) => tipos.includes(c.tipo)).map((c) => `<option value="${c.id}" ${String(valorAtual) === c.id ? "selected" : ""}>${c.nome}</option>`).join("");
+  return `<option value="">— nenhum —</option>` + canais.filter((c) => tipos.includes(c.tipo)).map((c) => `<option value="${c.id}" ${String(valorAtual) === c.id ? "selected" : ""}>${escaparHtml(c.nome)}</option>`).join("");
 }
 function opcoesCargos(cargos, valorAtual) {
-  return `<option value="">— nenhum —</option>` + cargos.map((c) => `<option value="${c.id}" ${String(valorAtual) === c.id ? "selected" : ""}>${c.nome}</option>`).join("");
+  return `<option value="">— nenhum —</option>` + cargos.map((c) => `<option value="${c.id}" ${String(valorAtual) === c.id ? "selected" : ""}>${escaparHtml(c.nome)}</option>`).join("");
 }
 
 const ABAS = ["geral", "autocargo", "contadores", "guerras", "patentes", "denuncias", "parcerias", "embeds", "roblox", "sorteios", "backup"];
@@ -158,7 +168,7 @@ function renderizarAutocargo(d) {
       const cargo = cargos.find((c) => c.id === String(cargoId) || c.id === cargoId);
       const item = document.createElement("div");
       item.className = "lista-item";
-      item.innerHTML = `<span class="info">#${canal ? canal.nome : canalId} → ${cargo ? cargo.nome : cargoId}</span><button>remover</button>`;
+      item.innerHTML = `<span class="info">#${escaparHtml(canal ? canal.nome : canalId)} → ${escaparHtml(cargo ? cargo.nome : cargoId)}</span><button>remover</button>`;
       item.querySelector("button").onclick = async () => {
         const r = await api("/api/autocargo-save", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, canalId, acao: "remover" }) });
         config.canais_cargo_automatico = r.canais_cargo_automatico;
@@ -201,7 +211,7 @@ function renderizarContadores(d) {
     config.contadores.forEach((c) => {
       const item = document.createElement("div");
       item.className = "lista-item";
-      item.innerHTML = `<span class="info">tipo: ${c.tipo}</span><button>remover</button>`;
+      item.innerHTML = `<span class="info">tipo: ${escaparHtml(c.tipo)}</span><button>remover</button>`;
       item.querySelector("button").onclick = async () => {
         const r = await api("/api/contador-remove", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, canalId: c.canal_id }) });
         config.contadores = r.contadores;
@@ -232,7 +242,7 @@ function renderizarGuerras(d) {
   const { guerras, temporadaAtual, canais } = d;
   const el = document.getElementById("aba-guerras");
   el.innerHTML = `
-    <p class="descricao-aba">Temporada atual: <strong>${temporadaAtual}</strong>. Pra registrar o placar com participantes, use <code>/guerra-registrar</code> no Discord (precisa marcar @membros).</p>
+    <p class="descricao-aba">Temporada atual: <strong>${escaparHtml(temporadaAtual)}</strong>. Pra registrar o placar com participantes, use <code>/guerra-registrar</code> no Discord (precisa marcar @membros).</p>
     <div class="secao-titulo">Anunciar guerra agendada</div>
     <div class="linha-formulario">
       <div class="campo"><label>Gangue A</label><input id="gu-gangue-a"></div>
@@ -257,7 +267,7 @@ function renderizarGuerras(d) {
   if (!guerras.length) {
     hist.innerHTML = `<p class="descricao-aba">Nenhuma guerra registrada ainda.</p>`;
   } else {
-    hist.innerHTML = guerras.map((g) => `<div class="lista-item"><span class="info"><strong>${g.gangue_a}</strong> ${g.placar_a} x ${g.placar_b} <strong>${g.gangue_b}</strong> — vencedor: ${g.vencedor} (temporada ${g.temporada})</span></div>`).join("");
+    hist.innerHTML = guerras.map((g) => `<div class="lista-item"><span class="info"><strong>${escaparHtml(g.gangue_a)}</strong> ${g.placar_a} x ${g.placar_b} <strong>${escaparHtml(g.gangue_b)}</strong> — vencedor: ${escaparHtml(g.vencedor)} (temporada ${escaparHtml(g.temporada)})</span></div>`).join("");
   }
 
   document.getElementById("gu-anunciar").onclick = async () => {
@@ -306,12 +316,12 @@ function renderizarPatentes(d) {
 
   const rankingEl = document.getElementById("pt-ranking");
   rankingEl.innerHTML = ranking.length
-    ? ranking.map((r, i) => `<div class="lista-item"><span class="info"><span class="ranking-pos">#${i + 1}</span><@${r.userId}> — ${r.vitorias} vitórias (${r.patente || "sem patente"})</span></div>`).join("")
+    ? ranking.map((r, i) => `<div class="lista-item"><span class="info"><span class="ranking-pos">#${i + 1}</span><@${r.userId}> — ${r.vitorias} vitórias (${escaparHtml(r.patente || "sem patente")})</span></div>`).join("")
     : `<p class="descricao-aba">Ninguém com perfil registrado ainda.</p>`;
 
   function renderListaPatentes(lista) {
     const container = document.getElementById("pt-lista");
-    container.innerHTML = lista.map((p) => `<div class="lista-item"><span class="info"><strong>${p.nome}</strong> — a partir de ${p.xp_minimo} XP${p.cargo_id ? ` (cargo: <@&${p.cargo_id}>)` : ""}</span><button data-nome="${p.nome}">remover</button></div>`).join("");
+    container.innerHTML = lista.map((p) => `<div class="lista-item"><span class="info"><strong>${escaparHtml(p.nome)}</strong> — a partir de ${p.xp_minimo} XP${p.cargo_id ? ` (cargo: <@&${p.cargo_id}>)` : ""}</span><button data-nome="${escaparHtml(p.nome)}">remover</button></div>`).join("");
     container.querySelectorAll("button").forEach((btn) => {
       btn.onclick = async () => {
         const r = await api("/api/patente-remove", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, nome: btn.dataset.nome }) });
@@ -345,10 +355,10 @@ function renderizarDenuncias(d) {
     if (!lista.length) { container.innerHTML = `<p class="descricao-aba">Nenhuma denúncia pendente. 🎉</p>`; return; }
     container.innerHTML = lista.map((den) => `
       <div class="lista-item" style="flex-direction:column; align-items:stretch;">
-        <span class="info"><strong>#${den.id}</strong> — <@${den.denunciado_id}> denunciado por <@${den.denunciante_id}><br>Motivo: ${den.motivo}</span>
+        <span class="info"><strong>#${escaparHtml(den.id)}</strong> — <@${den.denunciado_id}> denunciado por <@${den.denunciante_id}><br>Motivo: ${escaparHtml(den.motivo)}</span>
         <div style="display:flex; gap:8px; margin-top:8px;">
-          <input placeholder="ação tomada (ex: advertido)" data-id="${den.id}" class="input-resolucao" style="flex:1; background:var(--panel-2); border:1px solid var(--line); color:var(--phosphor); padding:6px 8px; font-size:0.8rem;">
-          <button data-id="${den.id}" class="botao botao-pequeno botao-primario btn-resolver">Resolver</button>
+          <input placeholder="ação tomada (ex: advertido)" data-id="${escaparHtml(den.id)}" class="input-resolucao" style="flex:1; background:var(--panel-2); border:1px solid var(--line); color:var(--phosphor); padding:6px 8px; font-size:0.8rem;">
+          <button data-id="${escaparHtml(den.id)}" class="botao botao-pequeno botao-primario btn-resolver">Resolver</button>
         </div>
       </div>`).join("");
     container.querySelectorAll(".btn-resolver").forEach((btn) => {
@@ -363,7 +373,7 @@ function renderizarDenuncias(d) {
     });
   }
   renderLista(denuncias);
-}
+  }
 
 // ---------------- Parcerias ----------------
 function renderizarParcerias(d) {
@@ -373,11 +383,13 @@ function renderizarParcerias(d) {
     <div class="campo"><label>Link de convite</label><input id="pc-convite"></div>
     <div class="campo"><label>Descrição</label><textarea id="pc-descricao"></textarea></div>
     <div class="campo"><label>Banner (URL, opcional)</label><input id="pc-banner"></div>
+    <button class="botao botao-primario" id="pc-adicionar">Publicar parceria</button>
+    <div class="secao-titulo">Parcerias registradas</div>
     <div id="pc-lista"></div>
   `;
   function renderLista(lista) {
     const container = document.getElementById("pc-lista");
-    container.innerHTML = lista.map((p) => `<div class="lista-item"><span class="info">${p.nome}</span><button data-nome="${p.nome}">remover</button></div>`).join("");
+    container.innerHTML = lista.map((p) => `<div class="lista-item"><span class="info">${escaparHtml(p.nome)}</span><button data-nome="${escaparHtml(p.nome)}">remover</button></div>`).join("");
     container.querySelectorAll("button").forEach((btn) => {
       btn.onclick = async () => {
         const r = await api("/api/parceria-remove", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, nome: btn.dataset.nome }) });
@@ -452,7 +464,7 @@ function renderizarRoblox(d) {
   const el = document.getElementById("aba-roblox");
   el.innerHTML = `
     <p class="descricao-aba">Sincroniza cargos do Discord com o rank do grupo Roblox da gangue.</p>
-    <div class="campo"><label>ID do grupo Roblox</label><input id="rb-grupo-id" value="${robloxGrupo.grupo_id || ""}" placeholder="ex: 123456"></div>
+    <div class="campo"><label>ID do grupo Roblox</label><input id="rb-grupo-id" value="${escaparHtml(robloxGrupo.grupo_id || "")}" placeholder="ex: 123456"></div>
     <button class="botao botao-primario" id="rb-salvar-grupo">Salvar grupo</button>
 
     <div class="secao-titulo">Mapear rank → cargo</div>
@@ -468,7 +480,7 @@ function renderizarRoblox(d) {
     const container = document.getElementById("rb-lista");
     const entradas = Object.entries(mapeamentos || {});
     container.innerHTML = entradas.length
-      ? entradas.map(([rank, cargoId]) => `<div class="lista-item"><span class="info">${rank} → <@&${cargoId}></span><button data-rank="${rank}">remover</button></div>`).join("")
+      ? entradas.map(([rank, cargoId]) => `<div class="lista-item"><span class="info">${escaparHtml(rank)} → <@&${cargoId}></span><button data-rank="${escaparHtml(rank)}">remover</button></div>`).join("")
       : `<p class="descricao-aba">Nenhum rank mapeado ainda.</p>`;
     container.querySelectorAll("button").forEach((btn) => {
       btn.onclick = async () => {
@@ -514,7 +526,7 @@ function renderizarSorteios(d) {
   `;
   const lista = document.getElementById("so-lista");
   lista.innerHTML = sorteios.length
-    ? sorteios.map((s) => `<div class="lista-item"><span class="info">${s.premio} — ${s.participantes.length} participante(s), termina <t:${s.fim}:R></span></div>`).join("")
+    ? sorteios.map((s) => `<div class="lista-item"><span class="info">${escaparHtml(s.premio)} — ${s.participantes.length} participante(s), termina <t:${s.fim}:R></span></div>`).join("")
     : `<p class="descricao-aba">Nenhum sorteio ativo no momento.</p>`;
 
   document.getElementById("so-criar").onclick = async () => {
