@@ -66,9 +66,14 @@ const NOMES_ABAS = { geral: "Geral", autocargo: "Cargo Automático", contadores:
 
 function renderizarPainel(d) {
   const conteudo = document.getElementById("conteudo");
+
+  // Se a URL vier com uma #aba (ex: dashboard.html#patentes), já abre nela.
+  const hashAba = window.location.hash.replace("#", "");
+  const abaInicial = ABAS.includes(hashAba) ? hashAba : ABAS[0];
+
   conteudo.innerHTML = `
-    <div class="abas">${ABAS.map((a, i) => `<div class="aba ${i === 0 ? "ativa" : ""}" data-aba="${a}">${NOMES_ABAS[a]}</div>`).join("")}</div>
-    ${ABAS.map((a, i) => `<div class="painel-aba ${i === 0 ? "ativa" : ""}" id="aba-${a}"></div>`).join("")}
+    <div class="abas">${ABAS.map((a) => `<div class="aba ${a === abaInicial ? "ativa" : ""}" data-aba="${a}">${NOMES_ABAS[a]}</div>`).join("")}</div>
+    ${ABAS.map((a) => `<div class="painel-aba ${a === abaInicial ? "ativa" : ""}" id="aba-${a}"></div>`).join("")}
   `;
   document.querySelectorAll(".aba").forEach((aba) => {
     aba.onclick = () => {
@@ -76,6 +81,7 @@ function renderizarPainel(d) {
       document.querySelectorAll(".painel-aba").forEach((p) => p.classList.remove("ativa"));
       aba.classList.add("ativa");
       document.getElementById(`aba-${aba.dataset.aba}`).classList.add("ativa");
+      window.location.hash = aba.dataset.aba;
     };
   });
 
@@ -367,8 +373,6 @@ function renderizarParcerias(d) {
     <div class="campo"><label>Link de convite</label><input id="pc-convite"></div>
     <div class="campo"><label>Descrição</label><textarea id="pc-descricao"></textarea></div>
     <div class="campo"><label>Banner (URL, opcional)</label><input id="pc-banner"></div>
-    <button class="botao botao-primario" id="pc-adicionar">Publicar parceria</button>
-    <div class="secao-titulo">Parcerias registradas</div>
     <div id="pc-lista"></div>
   `;
   function renderLista(lista) {
