@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ñ - ÑÊMESIS // Website</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#080808; --panel:#0f0f10; --panel-2:#151516; --blood:#8B0000;
+    --signal:#C1121F; --signal-soft: rgba(193,18,31,0.35); --steel:#9a9a9a;
+    --white:#eaeaea; --line: rgba(193,18,31,0.22);
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ background:var(--void); color:var(--white); font-family:'Rajdhani', sans-serif; }
+  a{ color:inherit; text-decoration:none; }
+  .wordmark{ font-family:'Audiowide', sans-serif; letter-spacing:0.04em; }
+  main{ max-width:1180px; margin:0 auto; padding:140px 6vw 100px; }
+  .voltar{ display:inline-block; font-size:0.78rem; letter-spacing:0.08em; color:var(--steel); text-transform:uppercase; margin-bottom:34px; }
+  .voltar:hover{ color:var(--signal); }
+  h1{ font-family:'Audiowide'; font-size:clamp(1.7rem,4vw,2.6rem); }
+  .subtitulo{ margin-top:14px; color:var(--steel); line-height:1.6; max-width:560px; }
+  .grade{ margin-top:50px; display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .cartao{ background:var(--panel); padding:34px 28px; display:flex; flex-direction:column; gap:14px; transition:background .2s; }
+  .cartao:hover{ background:var(--panel-2); }
+  .cartao .icone{ font-size:1.5rem; filter:drop-shadow(0 0 10px var(--signal-soft)); }
+  .cartao h3{ font-family:'Audiowide'; font-size:0.92rem; letter-spacing:0.02em; }
+  .cartao p{ color:var(--steel); font-size:0.85rem; line-height:1.55; flex:1; }
+  .cartao .ir{ font-size:0.76rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--signal); }
+  .carregando{ color:var(--steel); font-size:0.9rem; }
+</style>
+</head>
+<body>
+
+<main>
+  <a class="voltar" href="/">← Voltar pra home</a>
+  <h1 id="titulo" class="wordmark"></h1>
+  <p class="subtitulo" id="subtitulo"></p>
+  <div class="grade" id="grade">
+    <p class="carregando">Carregando…</p>
+  </div>
+</main>
+
+<script>
+  fetch('/.netlify/functions/site-conteudo-get')
+    .then(r => r.json())
+    .then(conteudo => {
+      document.getElementById('titulo').textContent = conteudo.titulo;
+      document.getElementById('subtitulo').textContent = conteudo.subtitulo;
+
+      const grade = document.getElementById('grade');
+      grade.innerHTML = '';
+      conteudo.cartoes.forEach(c => {
+        const externo = /^https?:\/\//.test(c.url);
+        const cartao = document.createElement('a');
+        cartao.className = 'cartao';
+        cartao.href = c.url;
+        if(externo){ cartao.target = '_blank'; cartao.rel = 'noopener'; }
+        cartao.innerHTML = `
+          <span class="icone">${c.icone}</span>
+          <h3>${c.titulo}</h3>
+          <p>${c.descricao}</p>
+          <span class="ir">${c.rotulo} →</span>
+        `;
+        grade.appendChild(cartao);
+      });
+    })
+    .catch(() => {
+      document.getElementById('grade').innerHTML = '<p class="carregando">Não deu pra carregar o conteúdo agora.</p>';
+    });
+</script>
+</body>
+</html>
