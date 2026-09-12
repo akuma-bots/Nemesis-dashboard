@@ -9,18 +9,22 @@
   from = "/login"
   to = "/.netlify/functions/auth-login"
   status = 302
+  force = true
 
 [[redirects]]
   from = "/callback"
   to = "/.netlify/functions/auth-callback"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/logout"
   to = "/.netlify/functions/logout"
   status = 302
+  force = true
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+  force = true
