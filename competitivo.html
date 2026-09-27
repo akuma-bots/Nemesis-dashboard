@@ -8,9 +8,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --void:#080808; --panel:#0f0f10; --panel-2:#151516; --blood:#8B0000;
-    --signal:#C1121F; --signal-soft: rgba(193,18,31,0.35); --steel:#9a9a9a;
-    --white:#eaeaea; --line: rgba(193,18,31,0.22); --verde:#2ecc71; --vermelho:#e74c3c;
+    --void:#080808; --panel:#0f0f10; --panel-2:#151516; --blood:#3a3a3a;
+    --signal:#ffffff; --signal-soft: rgba(255,255,255,0.25); --steel:#9a9a9a;
+    --white:#eaeaea; --line: rgba(255,255,255,0.16); --verde:#2ecc71; --vermelho:#e74c3c;
   }
   *{ margin:0; padding:0; box-sizing:border-box; }
   body{ background:var(--void); color:var(--white); font-family:'Rajdhani', sans-serif; }
@@ -42,6 +42,8 @@
   table.ranking td.pos{ font-family:'Audiowide'; color:var(--signal); }
   .tabela-scroll{ overflow-x:auto; border:1px solid var(--line); }
   .carregando, .vazio{ color:var(--steel); font-size:0.9rem; padding:20px 0; }
+  .rodape-secao{ display:flex; justify-content:flex-end; margin-top:10px; }
+  #ultima-atualizacao{ color:var(--steel); font-size:0.72rem; letter-spacing:0.04em; }
 </style>
 </head>
 <body>
@@ -74,61 +76,76 @@
       </tbody>
     </table>
   </div>
+  <div class="rodape-secao"><span id="ultima-atualizacao"></span></div>
 </main>
 
 <script>
-  fetch('/.netlify/functions/competitivo-get')
-    .then(r => r.json())
-    .then(d => {
-      const grupos = { pontos: 'catalogo-pontos', bonus: 'catalogo-bonus', penalidade: 'catalogo-penalidade' };
-      Object.values(grupos).forEach(id => document.getElementById(id).innerHTML = '');
+  function escaparHtml(texto){
+    return String(texto ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
 
-      d.catalogo.forEach(item => {
-        const alvo = document.getElementById(grupos[item.grupo] || grupos.pontos);
-        if (!alvo) return;
-        const div = document.createElement('div');
-        div.className = 'item-catalogo';
-        const sinal = item.pontos > 0 ? '+' : '';
-        div.innerHTML = `<span class="nome">${item.nome}</span><span class="pontos ${item.pontos < 0 ? 'negativo' : 'positivo'}">${sinal}${item.pontos}</span>`;
-        alvo.appendChild(div);
-      });
-      Object.values(grupos).forEach(id => {
-        const el = document.getElementById(id);
-        if (!el.children.length) el.innerHTML = '<p class="vazio">Nada por aqui ainda.</p>';
-      });
+  function carregarCompetitivo(primeiraVez){
+    fetch('/.netlify/functions/competitivo-get')
+      .then(r => r.json())
+      .then(d => {
+        if(primeiraVez){
+          const grupos = { pontos: 'catalogo-pontos', bonus: 'catalogo-bonus', penalidade: 'catalogo-penalidade' };
+          Object.values(grupos).forEach(id => document.getElementById(id).innerHTML = '');
 
-      const faixasEl = document.getElementById('faixas-elo');
-      faixasEl.innerHTML = '';
-      d.faixasElo.forEach((f, i) => {
-        const proxima = d.faixasElo[i + 1];
-        const intervalo = proxima ? `${f.min} — ${proxima.min - 1}` : `${f.min}+`;
-        const div = document.createElement('div');
-        div.className = 'item-faixa';
-        div.innerHTML = `<div class="nome">${f.nome.toUpperCase()}</div><div class="intervalo">${intervalo}</div>`;
-        faixasEl.appendChild(div);
-      });
+          d.catalogo.forEach(item => {
+            const alvo = document.getElementById(grupos[item.grupo] || grupos.pontos);
+            if (!alvo) return;
+            const div = document.createElement('div');
+            div.className = 'item-catalogo';
+            const sinal = item.pontos > 0 ? '+' : '';
+            div.innerHTML = `<span class="nome">${escaparHtml(item.nome)}</span><span class="pontos ${item.pontos < 0 ? 'negativo' : 'positivo'}">${sinal}${item.pontos}</span>`;
+            alvo.appendChild(div);
+          });
+          Object.values(grupos).forEach(id => {
+            const el = document.getElementById(id);
+            if (!el.children.length) el.innerHTML = '<p class="vazio">Nada por aqui ainda.</p>';
+          });
 
-      const corpo = document.getElementById('corpo-ranking');
-      if (!d.ranking.length) {
-        corpo.innerHTML = '<tr><td colspan="8" class="vazio">Ninguém no ranking ainda.</td></tr>';
-      } else {
-        corpo.innerHTML = d.ranking.map((r, i) => `
-          <tr>
-            <td class="pos">#${i + 1}</td>
-            <td>${r.nome}</td>
-            <td>${r.pontos.toLocaleString('pt-BR')}</td>
-            <td>${r.elo.toLocaleString('pt-BR')}</td>
-            <td>${r.rank}</td>
-            <td>${r.vitorias}</td>
-            <td>${r.derrotas}</td>
-            <td>${r.kd}</td>
-          </tr>
-        `).join('');
-      }
-    })
-    .catch(() => {
-      document.getElementById('corpo-ranking').innerHTML = '<tr><td colspan="8" class="vazio">Não deu pra carregar agora.</td></tr>';
-    });
+          const faixasEl = document.getElementById('faixas-elo');
+          faixasEl.innerHTML = '';
+          d.faixasElo.forEach((f, i) => {
+            const proxima = d.faixasElo[i + 1];
+            const intervalo = proxima ? `${f.min} — ${proxima.min - 1}` : `${f.min}+`;
+            const div = document.createElement('div');
+            div.className = 'item-faixa';
+            div.innerHTML = `<div class="nome">${f.nome.toUpperCase()}</div><div class="intervalo">${intervalo}</div>`;
+            faixasEl.appendChild(div);
+          });
+        }
+
+        const corpo = document.getElementById('corpo-ranking');
+        if (!d.ranking.length) {
+          corpo.innerHTML = '<tr><td colspan="8" class="vazio">Ninguém no ranking ainda.</td></tr>';
+        } else {
+          corpo.innerHTML = d.ranking.map((r, i) => `
+            <tr>
+              <td class="pos">#${i + 1}</td>
+              <td>${escaparHtml(r.nome)}</td>
+              <td>${r.pontos.toLocaleString('pt-BR')}</td>
+              <td>${r.elo.toLocaleString('pt-BR')}</td>
+              <td>${r.rank}</td>
+              <td>${r.vitorias}</td>
+              <td>${r.derrotas}</td>
+              <td>${r.kd}</td>
+            </tr>
+          `).join('');
+        }
+
+        const aviso = document.getElementById('ultima-atualizacao');
+        if (aviso) aviso.textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
+      })
+      .catch(() => {
+        document.getElementById('corpo-ranking').innerHTML = '<tr><td colspan="8" class="vazio">Não deu pra carregar agora.</td></tr>';
+      });
+  }
+
+  carregarCompetitivo(true);
+  setInterval(() => carregarCompetitivo(false), 10 * 60 * 1000); // recarrega o ranking sozinho a cada 10 minutos
 </script>
 </body>
 </html>
