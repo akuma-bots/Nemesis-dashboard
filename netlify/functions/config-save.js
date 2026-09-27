@@ -10,6 +10,9 @@ const CAMPOS_PERMITIDOS = [
   "canal_parcerias_id",
   "canal_denuncias_id",
   "categoria_modmail_id",
+  "ticket_painel_titulo",
+  "ticket_painel_descricao",
+  "ticket_painel_banner_url",
 ];
 
 exports.handler = async (event) => {
