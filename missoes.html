@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ñ - ÑÊMESIS // Missões</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#080808; --panel:#0f0f10; --panel-2:#151516; --blood:#3a3a3a;
+    --signal:#ffffff; --signal-soft: rgba(255,255,255,0.25); --steel:#9a9a9a;
+    --white:#eaeaea; --line: rgba(255,255,255,0.16);
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ background:var(--void); color:var(--white); font-family:'Rajdhani', sans-serif; }
+  a{ color:inherit; text-decoration:none; }
+  .wordmark{ font-family:'Audiowide', sans-serif; letter-spacing:0.04em; }
+  main{ max-width:1000px; margin:0 auto; padding:140px 6vw 100px; }
+  .voltar{ display:inline-block; font-size:0.78rem; letter-spacing:0.08em; color:var(--steel); text-transform:uppercase; margin-bottom:34px; }
+  .voltar:hover{ color:var(--signal); }
+  h1{ font-family:'Audiowide'; font-size:clamp(1.7rem,4vw,2.6rem); }
+  .subtitulo{ margin-top:14px; color:var(--steel); line-height:1.6; max-width:600px; }
+  h2.secao{ font-family:'Audiowide'; font-size:1.05rem; margin:56px 0 22px; letter-spacing:0.02em; }
+
+  .grade{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .cartao{ background:var(--panel); padding:26px 24px; display:flex; flex-direction:column; gap:12px; }
+  .selo{ font-family:'Audiowide'; font-size:0.66rem; letter-spacing:0.1em; color:var(--signal); text-transform:uppercase; }
+  .cartao h3{ font-family:'Audiowide'; font-size:0.95rem; }
+  .cartao p{ color:var(--steel); font-size:0.86rem; line-height:1.55; flex:1; }
+  .cartao .pontos{ font-family:'Audiowide'; font-size:0.85rem; }
+  .btn{
+    font-family:'Rajdhani'; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;
+    font-size:0.78rem; padding:11px 20px; cursor:pointer; border:1px solid var(--signal);
+    background:transparent; color:var(--white); transition:all .2s; text-align:center;
+  }
+  .btn-primario{ background:var(--signal); color:#080808; }
+  .btn-primario:hover{ opacity:0.85; }
+  .vazio{ color:var(--steel); font-size:0.9rem; padding:20px 0; }
+
+  .sobreposicao{ position:fixed; inset:0; background:rgba(0,0,0,0.75); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+  .sobreposicao.aberta{ display:flex; }
+  .caixa-modal{ background:var(--panel); border:1px solid var(--line); padding:28px; width:100%; max-width:420px; }
+  .caixa-modal h3{ font-family:'Audiowide'; font-size:1rem; margin-bottom:16px; }
+  .caixa-modal input[type="file"]{ width:100%; margin-bottom:16px; color:var(--steel); font-size:0.85rem; }
+  .linha-acoes{ display:flex; gap:10px; }
+  .btn-secundario{ border-color:var(--line); color:var(--steel); }
+  .status-modal{ font-size:0.8rem; color:var(--signal); margin-top:10px; min-height:1.2em; }
+</style>
+</head>
+<body>
+
+<main>
+  <a class="voltar" href="/">← Voltar pra home</a>
+  <h1 class="wordmark">Missões</h1>
+  <p class="subtitulo">Complete missões PvP e PvE, mande o print como prova, e ganhe pontos assim que a staff aprovar.</p>
+
+  <h2 class="secao">PvP</h2>
+  <div class="grade" id="grade-pvp"><p class="vazio">Carregando…</p></div>
+
+  <h2 class="secao">PvE</h2>
+  <div class="grade" id="grade-pve"><p class="vazio">Carregando…</p></div>
+</main>
+
+<div class="sobreposicao" id="modal">
+  <div class="caixa-modal">
+    <h3 id="modal-titulo">Enviar prova</h3>
+    <input type="file" id="modal-arquivo" accept="image/*">
+    <div class="linha-acoes">
+      <button class="btn btn-primario" id="modal-enviar" style="flex:1;">Enviar</button>
+      <button class="btn btn-secundario" onclick="fecharModal()" style="flex:1;">Cancelar</button>
+    </div>
+    <div class="status-modal" id="modal-status"></div>
+  </div>
+</div>
+
+<script>
+  function escaparHtml(texto){
+    return String(texto ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  let missaoSelecionada = null;
+
+  function cartaoMissao(m){
+    const div = document.createElement('div');
+    div.className = 'cartao';
+    div.innerHTML = `
+      <span class="selo">${escaparHtml(m.tipo.toUpperCase())}</span>
+      <h3>${escaparHtml(m.titulo)}</h3>
+      <p>${escaparHtml(m.descricao)}</p>
+      <span class="pontos">+${m.pontos} pontos</span>
+      <button class="btn btn-primario">Enviar prova</button>
+    `;
+    div.querySelector('button').onclick = () => abrirModal(m);
+    return div;
+  }
+
+  function abrirModal(m){
+    missaoSelecionada = m;
+    document.getElementById('modal-titulo').textContent = `Enviar prova — ${m.titulo}`;
+    document.getElementById('modal-arquivo').value = '';
+    document.getElementById('modal-status').textContent = '';
+    document.getElementById('modal').classList.add('aberta');
+  }
+  function fecharModal(){
+    document.getElementById('modal').classList.remove('aberta');
+  }
+
+  document.getElementById('modal-enviar').onclick = async () => {
+    const input = document.getElementById('modal-arquivo');
+    const arquivo = input.files[0];
+    const status = document.getElementById('modal-status');
+    if(!arquivo){ status.textContent = 'Escolhe uma imagem primeiro.'; return; }
+    if(arquivo.size > 1_500_000){ status.textContent = 'Imagem muito grande (máx 1.5MB).'; return; }
+
+    status.textContent = 'Enviando…';
+    const leitor = new FileReader();
+    leitor.onload = async () => {
+      try{
+        const resp = await fetch('/.netlify/functions/missoes-enviar-prova', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ missaoId: missaoSelecionada.id, imagemBase64: leitor.result }),
+        });
+        if(resp.status === 401){
+          status.innerHTML = 'Você precisa <a href="/login" style="color:var(--signal)">entrar com Discord</a> primeiro.';
+          return;
+        }
+        if(!resp.ok) throw new Error();
+        status.textContent = 'Enviado! Aguarde a staff revisar.';
+        setTimeout(fecharModal, 1800);
+      }catch(e){
+        status.textContent = 'Não deu pra enviar. Tenta de novo.';
+      }
+    };
+    leitor.readAsDataURL(arquivo);
+  };
+
+  fetch('/.netlify/functions/missoes-get')
+    .then(r => r.json())
+    .then(d => {
+      const pvp = document.getElementById('grade-pvp');
+      const pve = document.getElementById('grade-pve');
+      pvp.innerHTML = ''; pve.innerHTML = '';
+
+      const missoesPvp = d.missoes.filter(m => m.tipo === 'pvp');
+      const missoesPve = d.missoes.filter(m => m.tipo === 'pve');
+
+      missoesPvp.forEach(m => pvp.appendChild(cartaoMissao(m)));
+      missoesPve.forEach(m => pve.appendChild(cartaoMissao(m)));
+
+      if(!missoesPvp.length) pvp.innerHTML = '<p class="vazio">Nenhuma missão PvP ativa agora.</p>';
+      if(!missoesPve.length) pve.innerHTML = '<p class="vazio">Nenhuma missão PvE ativa agora.</p>';
+    })
+    .catch(() => {
+      document.getElementById('grade-pvp').innerHTML = '<p class="vazio">Não deu pra carregar agora.</p>';
+      document.getElementById('grade-pve').innerHTML = '';
+    });
+</script>
+</body>
+</html>
