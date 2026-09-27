@@ -71,8 +71,8 @@ function opcoesCargos(cargos, valorAtual) {
   return `<option value="">— nenhum —</option>` + cargos.map((c) => `<option value="${c.id}" ${String(valorAtual) === c.id ? "selected" : ""}>${escaparHtml(c.nome)}</option>`).join("");
 }
 
-const ABAS = ["geral", "autocargo", "contadores", "guerras", "patentes", "denuncias", "parcerias", "embeds", "roblox", "sorteios", "backup"];
-const NOMES_ABAS = { geral: "Geral", autocargo: "Cargo Automático", contadores: "Contadores", guerras: "Guerras", patentes: "Patentes & Ranking", denuncias: "Denúncias", parcerias: "Parcerias", embeds: "Embeds", roblox: "Roblox", sorteios: "Sorteios", backup: "Backup" };
+const ABAS = ["geral", "tickets", "autocargo", "contadores", "guerras", "patentes", "denuncias", "parcerias", "embeds", "roblox", "sorteios", "backup"];
+const NOMES_ABAS = { geral: "Geral", tickets: "Tickets", autocargo: "Cargo Automático", contadores: "Contadores", guerras: "Guerras", patentes: "Patentes & Ranking", denuncias: "Denúncias", parcerias: "Parcerias", embeds: "Embeds", roblox: "Roblox", sorteios: "Sorteios", backup: "Backup" };
 
 function renderizarPainel(d) {
   const conteudo = document.getElementById("conteudo");
@@ -96,6 +96,7 @@ function renderizarPainel(d) {
   });
 
   renderizarGeral(d);
+  renderizarTickets(d);
   renderizarAutocargo(d);
   renderizarContadores(d);
   renderizarGuerras(d);
@@ -144,6 +145,114 @@ function renderizarGeral(d) {
       mostrarAviso("aba-geral", "Salvo com sucesso.", "sucesso");
     } catch (e) { mostrarAviso("aba-geral", e.message, "erro"); }
   };
+}
+
+// ---------------- Tickets ----------------
+async function renderizarTickets(d) {
+  const { config } = d;
+  const el = document.getElementById("aba-tickets");
+  el.innerHTML = `<p style="color:var(--steel)">Carregando categorias...</p>`;
+
+  let tipos;
+  try {
+    const resp = await api(`/api/ticket-tipos?guildId=${servidorAtual}`);
+    tipos = resp.tipos;
+  } catch (e) {
+    el.innerHTML = `<p class="aviso erro">Erro ao carregar categorias: ${escaparHtml(e.message)}</p>`;
+    return;
+  }
+
+  function slugificar(label) {
+    return label
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .split(/\s+/)
+      .join("_");
+  }
+
+  function render() {
+    el.innerHTML = `
+      <p class="descricao-aba">Título, descrição e banner do painel de abertura de tickets. Depois de salvar, rode <code>/ticket-painel</code> de novo no Discord pra publicar a versão atualizada.</p>
+      <div class="campo"><label>Título do painel</label><input id="tk-painel-titulo" value="${escaparHtml(config.ticket_painel_titulo || "")}" placeholder="🎫 Central de Suporte"></div>
+      <div class="campo"><label>Descrição do painel</label><textarea id="tk-painel-descricao" placeholder="Selecione o tipo de atendimento abaixo pra abrir um ticket.">${escaparHtml(config.ticket_painel_descricao || "")}</textarea></div>
+      <div class="campo"><label>Banner (URL da imagem, opcional)</label><input id="tk-painel-banner" value="${escaparHtml(config.ticket_painel_banner_url || "")}"></div>
+      <button class="botao botao-primario" id="tk-painel-salvar">Salvar painel</button>
+
+      <div class="secao-titulo">Categorias do menu</div>
+      <div id="tk-lista-tipos"></div>
+
+      <div class="secao-titulo">Adicionar categoria</div>
+      <div class="linha-formulario">
+        <div class="campo"><label>Nome</label><input id="tk-novo-label" placeholder="ex: Denúncias"></div>
+        <div class="campo"><label>Emoji (opcional)</label><input id="tk-novo-emoji" placeholder="🎫"></div>
+      </div>
+      <div class="campo"><label>Descrição (aparece embaixo do nome no menu)</label><input id="tk-novo-descricao" placeholder="ex: Clique aqui pra denunciar alguém."></div>
+      <label style="display:flex; align-items:center; gap:8px; margin-bottom:14px; color:var(--phosphor); font-size:0.85rem;">
+        <input type="checkbox" id="tk-novo-ia" style="width:auto;"> Usa resposta automática (base de conhecimento por IA)
+      </label>
+      <button class="botao botao-primario" id="tk-adicionar">Adicionar categoria</button>
+    `;
+    renderListaTipos();
+    document.getElementById("tk-painel-salvar").onclick = salvarPainel;
+    document.getElementById("tk-adicionar").onclick = adicionarTipo;
+  }
+
+  function renderListaTipos() {
+    const lista = document.getElementById("tk-lista-tipos");
+    lista.innerHTML = tipos.map((t) => `
+      <div class="lista-item">
+        <span class="info">${escaparHtml(t.emoji || "🎫")} <strong>${escaparHtml(t.label)}</strong> (<code>${escaparHtml(t.valor)}</code>)${t.usa_ia ? " — usa IA" : ""}<br><span style="color:var(--steel)">${escaparHtml(t.descricao)}</span></span>
+        <button data-valor="${escaparHtml(t.valor)}">remover</button>
+      </div>
+    `).join("");
+    lista.querySelectorAll("button").forEach((btn) => {
+      btn.onclick = async () => {
+        tipos = tipos.filter((t) => t.valor !== btn.dataset.valor);
+        await salvarTipos();
+        renderListaTipos();
+      };
+    });
+  }
+
+  async function salvarTipos() {
+    try {
+      await api("/api/ticket-tipos-save", { method: "POST", body: JSON.stringify({ guildId: servidorAtual, tipos }) });
+      mostrarAviso("aba-tickets", "Categorias atualizadas. Rode /ticket-painel de novo pra publicar.", "sucesso");
+    } catch (e) { mostrarAviso("aba-tickets", e.message, "erro"); }
+  }
+
+  async function adicionarTipo() {
+    const label = document.getElementById("tk-novo-label").value.trim();
+    const emoji = document.getElementById("tk-novo-emoji").value.trim();
+    const descricao = document.getElementById("tk-novo-descricao").value.trim();
+    const usaIa = document.getElementById("tk-novo-ia").checked;
+    if (!label || !descricao) return mostrarAviso("aba-tickets", "Preenche nome e descrição.", "erro");
+
+    const valor = slugificar(label);
+    tipos = tipos.filter((t) => t.valor !== valor);
+    tipos.push({ valor, label, emoji: emoji || "🎫", descricao, usa_ia: usaIa });
+    await salvarTipos();
+    render();
+  }
+
+  async function salvarPainel() {
+    try {
+      const r = await api("/api/config-save", { method: "POST", body: JSON.stringify({
+        guildId: servidorAtual,
+        ticket_painel_titulo: document.getElementById("tk-painel-titulo").value,
+        ticket_painel_descricao: document.getElementById("tk-painel-descricao").value,
+        ticket_painel_banner_url: document.getElementById("tk-painel-banner").value,
+      })});
+      config.ticket_painel_titulo = r.config.ticket_painel_titulo;
+      config.ticket_painel_descricao = r.config.ticket_painel_descricao;
+      config.ticket_painel_banner_url = r.config.ticket_painel_banner_url;
+      mostrarAviso("aba-tickets", "Painel salvo. Rode /ticket-painel de novo no Discord pra publicar.", "sucesso");
+    } catch (e) { mostrarAviso("aba-tickets", e.message, "erro"); }
+  }
+
+  render();
 }
 
 // ---------------- Cargo Automático ----------------
@@ -373,7 +482,7 @@ function renderizarDenuncias(d) {
     });
   }
   renderLista(denuncias);
-  }
+}
 
 // ---------------- Parcerias ----------------
 function renderizarParcerias(d) {
