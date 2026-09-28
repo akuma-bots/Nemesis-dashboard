@@ -40,26 +40,13 @@ const PADRAO = {
     },
 
 
-    {
-      icone: "🧩",
-
-      titulo: "ROBLOX",
-
-      descricao:
-        "Visite a comunidade da NÊMESIS no Roblox e acompanhe as atividades no jogo.",
-
-      /*
-       * IMPORTANTE:
-       * Substitua pelo link REAL da comunidade Roblox
-       * da NÊMESIS.
-       */
-      url:
-        "https://www.roblox.com/communities/SEU_ID/NEMESIS",
-
-      rotulo:
-        "Ver comunidade",
-    },
-
+   {
+  icone: "🧩",
+  titulo: "ROBLOX",
+  descricao: "Visite a comunidade da NÊMESIS no Roblox e acompanhe as atividades no jogo.",
+  url: "https://www.roblox.com/pt/communities/621286796/Comunidade-Nik",
+  rotulo: "Ver comunidade",
+},
 
     {
       icone: "🏴",
