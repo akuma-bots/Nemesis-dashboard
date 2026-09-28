@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ñ - ÑÊMESIS // Candidaturas</title>
+<link rel="stylesheet" href="/tema-nemesis.css">
+</head>
+<body>
+<main class="pagina">
+  <a class="voltar" href="/">← Voltar</a>
+  <h1 id="titulo">Candidaturas</h1>
+  <p class="subtitulo" id="sub">Escolha um formulário abaixo e conte um pouco sobre você.</p>
+  <div id="conteudo" style="margin-top:50px;"></div>
+</main>
+
+<script>
+function h(tag, props, ...filhos) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e[k] = v;
+    else if (k !== 'value') e.setAttribute(k, v === true ? '' : v);
+  }
+  filhos.flat().forEach((f) => e.append(f instanceof Node ? f : document.createTextNode(f == null ? '' : f)));
+  if (props && props.value !== undefined) e.value = props.value;
+  return e;
+}
+
+const raiz = document.getElementById('conteudo');
+const idForm = new URLSearchParams(location.search).get('id');
+let logado = null;
+
+async function checarLogin() {
+  if (logado !== null) return logado;
+  try { logado = (await fetch('/.netlify/functions/me')).ok; } catch (e) { logado = false; }
+  return logado;
+}
+
+async function listar() {
+  raiz.replaceChildren(h('p', { class: 'vazio' }, 'Carregando…'));
+  const d = await (await fetch('/.netlify/functions/formularios-get')).json();
+  if (!d.formularios.length) {
+    raiz.replaceChildren(h('p', { class: 'vazio' }, 'Nenhum formulário aberto no momento.'));
+    return;
+  }
+  raiz.replaceChildren(h('div', { class: 'grade' }, d.formularios.map((f) =>
+    h('a', { class: 'cartao', href: '?id=' + encodeURIComponent(f.id) },
+      h('h3', {}, f.titulo),
+      h('p', { class: 'texto-suave' }, f.descricao || ''),
+      h('span', { class: 'nx-mais' }, 'Candidatar-se')))));
+}
+
+async function abrir(id) {
+  const r = await fetch('/.netlify/functions/formularios-get?id=' + encodeURIComponent(id));
+  if (!r.ok) { raiz.replaceChildren(h('p', { class: 'vazio' }, 'Formulário não encontrado ou fechado.')); return; }
+  const f = (await r.json()).formulario;
+  document.getElementById('titulo').textContent = f.titulo;
+  document.getElementById('sub').textContent = f.descricao || '';
+
+  if (!(await checarLogin())) {
+    raiz.replaceChildren(h('div', { class: 'estado-central' },
+      h('p', {}, 'Entre com sua conta do Discord para se candidatar.'),
+      h('a', { class: 'btn btn-primario', href: '/login' }, 'Entrar com Discord')));
+    return;
+  }
+
+  const total = f.paginas.length;
+  if (!total) { raiz.replaceChildren(h('p', { class: 'vazio' }, 'Este formulário ainda não tem perguntas.')); return; }
+  const respostas = {};
+  let pagina = 0;
+
+  function desenhar() {
+    const p = f.paginas[pagina];
+    const ultima = pagina === total - 1;
+    const erro = h('p', { class: 'status' });
+
+    const campos = p.perguntas.map((q) => {
+      let entrada;
+      if (q.tipo === 'longa') {
+        entrada = h('textarea', { rows: '5', maxlength: '2000', value: respostas[q.id] || '', oninput: (e) => { respostas[q.id] = e.target.value; } });
+      } else if (q.tipo === 'escolha') {
+        entrada = h('select', { value: respostas[q.id] || '', onchange: (e) => { respostas[q.id] = e.target.value; } },
+          h('option', { value: '' }, '— selecione —'),
+          (q.opcoes || []).map((o) => h('option', { value: o }, o)));
+      } else {
+        entrada = h('input', { type: 'text', maxlength: '300', value: respostas[q.id] || '', oninput: (e) => { respostas[q.id] = e.target.value; } });
+      }
+      return h('div', { class: 'campo' }, h('label', {}, q.texto + (q.obrigatoria ? ' *' : '')), entrada);
+    });
+
+    function faltando() {
+      const q = p.perguntas.find((x) => x.obrigatoria && !String(respostas[x.id] || '').trim());
+      return q ? q.texto : null;
+    }
+
+    const btnVoltar = pagina > 0
+      ? h('button', { class: 'btn btn-secundario', type: 'button', onclick: () => { pagina--; desenhar(); } }, 'Voltar')
+      : null;
+    const btnAvancar = h('button', { class: 'btn btn-primario', type: 'button', onclick: async () => {
+      const pendente = faltando();
+      if (pendente) { erro.textContent = 'Responda: ' + pendente; return; }
+      if (!ultima) { pagina++; desenhar(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      await enviar(erro, btnAvancar);
+    } }, ultima ? 'Enviar candidatura' : 'Próxima etapa');
+
+    raiz.replaceChildren(h('div', { class: 'bloco', style: 'max-width:720px' },
+      h('div', { class: 'progresso' }, h('span', { style: 'width:' + ((pagina + 1) / total * 100) + '%' })),
+      h('h4', {}, 'ETAPA ' + (pagina + 1) + ' DE ' + total + (p.titulo ? ' — ' + p.titulo.toUpperCase() : '')),
+      campos,
+      erro,
+      h('div', { class: 'linha-acoes' }, btnVoltar, btnAvancar)));
+  }
+
+  async function enviar(erro, botao) {
+    botao.disabled = true;
+    erro.textContent = 'Enviando…';
+    try {
+      const resp = await fetch('/.netlify/functions/formularios-enviar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formId: f.id, respostas }),
+      });
+      const d = await resp.json().catch(() => ({}));
+      if (resp.status === 401) { erro.textContent = 'Sua sessão expirou. Entre com o Discord de novo.'; botao.disabled = false; return; }
+      if (!resp.ok) { erro.textContent = d.erro || 'Não deu pra enviar.'; botao.disabled = false; return; }
+      raiz.replaceChildren(h('div', { class: 'estado-central' },
+        h('h3', {}, 'Candidatura enviada'),
+        h('p', {}, 'Nossa equipe já foi avisada. Você receberá a resposta por mensagem privada no Discord — deixe suas DMs abertas.'),
+        h('a', { class: 'btn', href: '/' }, 'Voltar ao início')));
+    } catch (e) {
+      erro.textContent = 'Erro de conexão. Tenta de novo.';
+      botao.disabled = false;
+    }
+  }
+
+  desenhar();
+}
+
+(idForm ? abrir(idForm) : listar()).catch(() => raiz.replaceChildren(h('p', { class: 'vazio' }, 'Não deu pra carregar agora.')));
+</script>
+</body>
+</html>
