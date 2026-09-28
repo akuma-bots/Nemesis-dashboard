@@ -3,7 +3,7 @@ const PERMISSAO_GERENCIAR_SERVIDOR = 0x20n;
 
 async function trocarCodigoPorToken(code) {
   const body = new URLSearchParams({
-    client_id: process.env.DISCORD_CLIENT_ID,
+    redirect_uri: process.env.DISCORD_REDIRECT_URI || process.env.DISCORD_REDIRECT_URL,
     client_secret: process.env.DISCORD_CLIENT_SECRET,
     grant_type: "authorization_code",
     code,
