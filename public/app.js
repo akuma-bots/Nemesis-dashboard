@@ -155,7 +155,7 @@ async function renderizarTickets(d) {
 
   let tipos;
   try {
-    const resp = await api(`/api/ticket-tipos?guildId=${servidorAtual}`);
+    const resp = await api(`/api/ticket-tipos-get?guildId=${servidorAtual}`);
     tipos = resp.tipos;
   } catch (e) {
     el.innerHTML = `<p class="aviso erro">Erro ao carregar categorias: ${escaparHtml(e.message)}</p>`;
