@@ -123,6 +123,50 @@ async function criarEventoAgendado(guildId, { nome, descricao, inicioISO, fimISO
   return resposta.json();
 }
 
+// ---------------- Moderação ----------------
+
+async function buscarMembro(guildId, userId) {
+  const resposta = await fetch(`${API}/guilds/${guildId}/members/${userId}`, { headers: headersBot() });
+  if (!resposta.ok) return null;
+  return resposta.json();
+}
+
+async function banirMembro(guildId, userId, motivo) {
+  const resposta = await fetch(`${API}/guilds/${guildId}/bans/${userId}`, {
+    method: "PUT",
+    headers: { ...headersBot(), "X-Audit-Log-Reason": encodeURIComponent(motivo || "Sem motivo informado.") },
+    body: JSON.stringify({ delete_message_seconds: 0 }),
+  });
+  if (!resposta.ok) throw new Error(`Falha ao banir (${resposta.status}): ${await resposta.text()}`);
+}
+
+async function expulsarMembro(guildId, userId, motivo) {
+  const resposta = await fetch(`${API}/guilds/${guildId}/members/${userId}`, {
+    method: "DELETE",
+    headers: { ...headersBot(), "X-Audit-Log-Reason": encodeURIComponent(motivo || "Sem motivo informado.") },
+  });
+  if (!resposta.ok && resposta.status !== 404) throw new Error(`Falha ao expulsar (${resposta.status}): ${await resposta.text()}`);
+}
+
+async function aplicarTimeout(guildId, userId, minutos, motivo) {
+  const ate = new Date(Date.now() + minutos * 60000).toISOString();
+  const resposta = await fetch(`${API}/guilds/${guildId}/members/${userId}`, {
+    method: "PATCH",
+    headers: { ...headersBot(), "X-Audit-Log-Reason": encodeURIComponent(motivo || "Sem motivo informado.") },
+    body: JSON.stringify({ communication_disabled_until: ate }),
+  });
+  if (!resposta.ok) throw new Error(`Falha ao mutar (${resposta.status}): ${await resposta.text()}`);
+}
+
+async function removerTimeout(guildId, userId) {
+  const resposta = await fetch(`${API}/guilds/${guildId}/members/${userId}`, {
+    method: "PATCH",
+    headers: headersBot(),
+    body: JSON.stringify({ communication_disabled_until: null }),
+  });
+  if (!resposta.ok) throw new Error(`Falha ao desmutar (${resposta.status}): ${await resposta.text()}`);
+}
+
 module.exports = {
   trocarCodigoPorToken,
   buscarUsuario,
@@ -137,4 +181,9 @@ module.exports = {
   buscarCanal,
   enviarEmbed,
   criarEventoAgendado,
+  buscarMembro,
+  banirMembro,
+  expulsarMembro,
+  aplicarTimeout,
+  removerTimeout,
 };
