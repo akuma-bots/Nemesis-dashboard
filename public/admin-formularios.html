@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ñ - ÑÊMESIS // Editar Candidaturas</title>
+<link rel="stylesheet" href="/tema-nemesis.css">
+</head>
+<body>
+<main class="pagina" style="max-width:860px">
+  <a class="voltar" href="/">← Voltar</a>
+  <h1>Editar Candidaturas</h1>
+  <p class="sub">Monte formulários por etapas e revise as candidaturas recebidas.</p>
+
+  <div id="tela-carregando" class="estado-central"><p>Verificando login…</p></div>
+  <div id="tela-login" class="estado-central" style="display:none"><p>Entre com Discord para editar.</p><a class="btn btn-primario" href="/login">Entrar com Discord</a></div>
+  <div id="tela-negado" class="estado-central" style="display:none"><p>Você não gerencia o servidor da NÊMESIS.</p></div>
+
+  <div id="tela-editor" style="display:none">
+    <div class="bloco"><h4>CANDIDATURAS PENDENTES</h4><div id="pendentes"></div></div>
+
+    <div class="bloco">
+      <h4>FORMULÁRIOS</h4>
+      <div id="editor-forms"></div>
+      <div class="linha-acoes">
+        <button class="btn btn-secundario" type="button" onclick="novoForm()">+ Novo formulário</button>
+        <button class="btn btn-primario" type="button" onclick="salvar()">Salvar formulários</button>
+      </div>
+      <p class="status" id="status"></p>
+    </div>
+
+    <div class="bloco"><h4>HISTÓRICO RECENTE</h4><div id="historico"></div></div>
+  </div>
+</main>
+
+<script>
+function h(tag, props, ...filhos) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e[k] = v;
+    else if (k !== 'value') e.setAttribute(k, v === true ? '' : v);
+  }
+  filhos.flat().forEach((f) => e.append(f instanceof Node ? f : document.createTextNode(f == null ? '' : f)));
+  if (props && props.value !== undefined) e.value = props.value;
+  return e;
+}
+const $ = (s) => document.querySelector(s);
+let dados = { formularios: [], respostas: [], cargos: [], canais: [] };
+
+function mostrar(id) {
+  ['tela-carregando', 'tela-login', 'tela-negado', 'tela-editor'].forEach((t) => { $('#' + t).style.display = t === id ? '' : 'none'; });
+}
+function avisar(msg) {
+  const el = $('#status'); el.textContent = msg;
+  setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 4000);
+}
+function novoId(p) { return p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function alternar(lista, valor, ligado) {
+  const i = lista.indexOf(valor);
+  if (ligado && i < 0) lista.push(valor);
+  if (!ligado && i >= 0) lista.splice(i, 1);
+}
+function campo(rotulo, entrada) { return h('div', { class: 'campo' }, h('label', {}, rotulo), entrada); }
+
+function normalizar(f) {
+  f.cargosNotificar = f.cargosNotificar || [];
+  f.canalNotificacaoId = f.canalNotificacaoId || '';
+  f.paginas = f.paginas || [];
+  f.paginas.forEach((p) => { p.perguntas = p.perguntas || []; p.perguntas.forEach((q) => { q.opcoes = q.opcoes || []; }); });
+}
+
+async function iniciar() {
+  let r;
+  try { r = await fetch('/.netlify/functions/formularios-admin-get'); } catch (e) { return mostrar('tela-login'); }
+  if (r.status === 401) return mostrar('tela-login');
+  if (r.status === 403) return mostrar('tela-negado');
+  dados = await r.json();
+  dados.formularios.forEach(normalizar);
+  desenharEditor(); desenharRespostas(); mostrar('tela-editor');
+}
+
+function novoForm() {
+  dados.formularios.push({ id: novoId('form'), titulo: 'Novo formulário', descricao: '', ativo: false, cargosNotificar: [], canalNotificacaoId: '', paginas: [{ titulo: 'Etapa 1', perguntas: [] }] });
+  desenharEditor();
+}
+
+function desenharEditor() {
+  const cont = $('#editor-forms');
+  if (!dados.formularios.length) { cont.replaceChildren(h('p', { class: 'vazio' }, 'Nenhum formulário ainda.')); return; }
+  cont.replaceChildren(...dados.formularios.map((f, fi) => blocoForm(f, fi)));
+}
+
+function blocoForm(f, fi) {
+  const canais = h('select', { value: f.canalNotificacaoId, onchange: (e) => { f.canalNotificacaoId = e.target.value; } },
+    h('option', { value: '' }, '— nenhum —'),
+    dados.canais.map((c) => h('option', { value: c.id }, '#' + c.nome)));
+  const cargos = h('div', { class: 'caixa-check' }, dados.cargos.length
+    ? dados.cargos.map((c) => h('label', { class: 'check' },
+        h('input', { type: 'checkbox', checked: f.cargosNotificar.includes(c.id), onchange: (e) => alternar(f.cargosNotificar, c.id, e.target.checked) }), c.nome))
+    : h('span', { class: 'texto-suave' }, 'Não consegui listar os cargos do servidor.'));
+
+  return h('div', { class: 'bloco', style: 'background:var(--void)' },
+    campo('Título', h('input', { type: 'text', value: f.titulo, oninput: (e) => { f.titulo = e.target.value; } })),
+    campo('Descrição', h('textarea', { rows: '2', value: f.descricao, oninput: (e) => { f.descricao = e.target.value; } })),
+    h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: f.ativo, onchange: (e) => { f.ativo = e.target.checked; } }), 'Formulário aberto (visível no site)'),
+    campo('Cargos que recebem DM a cada candidatura', cargos),
+    campo('Canal de aviso (opcional — também marca os cargos acima)', canais),
+    f.paginas.map((p, pi) => blocoPagina(f, p, pi)),
+    h('div', { class: 'linha-acoes' },
+      h('button', { class: 'btn btn-secundario', type: 'button', onclick: () => { f.paginas.push({ titulo: 'Etapa ' + (f.paginas.length + 1), perguntas: [] }); desenharEditor(); } }, '+ Etapa'),
+      h('button', { class: 'btn btn-secundario btn-remover', type: 'button', onclick: () => { if (confirm('Remover este formulário?')) { dados.formularios.splice(fi, 1); desenharEditor(); } } }, 'Remover formulário')));
+}
+
+function blocoPagina(f, p, pi) {
+  return h('div', { class: 'bloco', style: 'margin-top:18px' },
+    campo('Etapa ' + (pi + 1) + ' — título', h('input', { type: 'text', value: p.titulo, oninput: (e) => { p.titulo = e.target.value; } })),
+    p.perguntas.map((q, qi) => blocoPergunta(p, q, qi)),
+    h('div', { class: 'linha-acoes' },
+      h('button', { class: 'btn btn-secundario', type: 'button', onclick: () => { p.perguntas.push({ id: novoId('q'), texto: 'Nova pergunta', tipo: 'curta', obrigatoria: true, opcoes: [] }); desenharEditor(); } }, '+ Pergunta'),
+      f.paginas.length > 1 ? h('button', { class: 'btn btn-secundario btn-remover', type: 'button', onclick: () => { f.paginas.splice(pi, 1); desenharEditor(); } }, 'Remover etapa') : null));
+}
+
+function blocoPergunta(p, q, qi) {
+  return h('div', { class: 'bloco', style: 'background:var(--panel-2);padding:18px' },
+    campo('Pergunta', h('input', { type: 'text', value: q.texto, oninput: (e) => { q.texto = e.target.value; } })),
+    h('div', { class: 'linha' },
+      campo('Tipo', h('select', { value: q.tipo, onchange: (e) => { q.tipo = e.target.value; desenharEditor(); } },
+        h('option', { value: 'curta' }, 'Resposta curta'),
+        h('option', { value: 'longa' }, 'Resposta longa'),
+        h('option', { value: 'escolha' }, 'Múltipla escolha'))),
+      h('label', { class: 'check', style: 'align-self:end;padding-bottom:12px' },
+        h('input', { type: 'checkbox', checked: q.obrigatoria, onchange: (e) => { q.obrigatoria = e.target.checked; } }), 'Obrigatória')),
+    q.tipo === 'escolha'
+      ? campo('Opções (uma por linha)', h('textarea', { rows: '3', value: q.opcoes.join('\n'), oninput: (e) => { q.opcoes = e.target.value.split('\n').map((o) => o.trim()).filter(Boolean); } }))
+      : null,
+    h('div', { class: 'linha-acoes' },
+      h('button', { class: 'btn btn-secundario btn-remover', type: 'button', onclick: () => { p.perguntas.splice(qi, 1); desenharEditor(); } }, 'Remover pergunta')));
+}
+
+async function salvar() {
+  const resp = await fetch('/.netlify/functions/formularios-save', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ formularios: dados.formularios }),
+  });
+  if (resp.status === 403) return mostrar('tela-negado');
+  avisar(resp.ok ? 'Formulários salvos — já valem para o site.' : 'Não deu pra salvar.');
+}
+
+function desenharRespostas() {
+  const ordenar = (a, b) => b.criadoEm - a.criadoEm;
+  const pend = dados.respostas.filter((r) => r.status === 'pendente').sort(ordenar);
+  const hist = dados.respostas.filter((r) => r.status !== 'pendente').sort(ordenar).slice(0, 15);
+  $('#pendentes').replaceChildren(...(pend.length ? pend.map((r) => cartaoResposta(r, true)) : [h('p', { class: 'vazio' }, 'Nenhuma candidatura pendente.')]));
+  $('#historico').replaceChildren(...(hist.length ? hist.map((r) => cartaoResposta(r, false)) : [h('p', { class: 'vazio' }, 'Sem histórico ainda.')]));
+}
+
+function cartaoResposta(r, revisavel) {
+  const msg = h('input', { type: 'text', placeholder: 'Mensagem para o candidato (opcional)' });
+  return h('div', { class: 'bloco', style: 'background:var(--void)' },
+    h('strong', {}, r.nome),
+    h('span', { class: 'texto-suave' }, ' — ' + r.formTitulo + ' · ' + new Date(r.criadoEm).toLocaleString('pt-BR') + (revisavel ? '' : ' · ' + r.status)),
+    (r.itens || []).map((i) => h('div', { class: 'qa' }, h('strong', {}, i.pergunta), h('p', {}, i.resposta))),
+    revisavel ? h('div', { style: 'margin-top:16px' }, msg,
+      h('div', { class: 'linha-acoes' },
+        h('button', { class: 'btn btn-secundario', type: 'button', style: 'background:var(--white);color:#000', onclick: () => revisar(r, 'aprovada', msg.value) }, 'Aprovar'),
+        h('button', { class: 'btn btn-secundario btn-remover', type: 'button', onclick: () => revisar(r, 'recusada', msg.value) }, 'Recusar'))) : null);
+}
+
+async function revisar(r, decisao, mensagem) {
+  if (decisao === 'recusada' && !confirm('Recusar esta candidatura?')) return;
+  const resp = await fetch('/.netlify/functions/formularios-revisar', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ respostaId: r.id, decisao, mensagem }),
+  });
+  if (resp.status === 403) return mostrar('tela-negado');
+  if (!resp.ok) return avisar('Não deu pra revisar.');
+  r.status = decisao;
+  desenharRespostas();
+}
+
+iniciar();
+</script>
+</body>
+</html>
