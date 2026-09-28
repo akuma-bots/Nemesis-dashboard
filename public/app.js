@@ -12,7 +12,7 @@ function escaparHtml(texto) {
 
 async function api(caminho, opcoes = {}) {
   const resposta = await fetch(caminho, { ...opcoes, headers: { "Content-Type": "application/json", ...(opcoes.headers || {}) } });
-  if (resposta.status === 401) { window.location.href = "/"; throw new Error("não autenticado"); }
+  if (resposta.status === 401) { window.location.href = "/login.html"; return new Promise(() => {}); }
   const dados = await resposta.json();
   if (!resposta.ok) throw new Error(dados.erro || "erro desconhecido");
   return dados;
@@ -425,7 +425,7 @@ function renderizarPatentes(d) {
 
   const rankingEl = document.getElementById("pt-ranking");
   rankingEl.innerHTML = ranking.length
-    ? ranking.map((r, i) => `<div class="lista-item"><span class="info"><span class="ranking-pos">#${i + 1}</span><@${r.discordId}> — ${r.vitorias} vitórias (${escaparHtml(r.patente || "sem patente")})</span></div>`).join("")
+    ? ranking.map((r, i) => `<div class="lista-item"><span class="info"><span class="ranking-pos">#${i + 1}</span><@${r.userId}> — ${r.vitorias} vitórias (${escaparHtml(r.patente || "sem patente")})</span></div>`).join("")
     : `<p class="descricao-aba">Ninguém com perfil registrado ainda.</p>`;
 
   function renderListaPatentes(lista) {
