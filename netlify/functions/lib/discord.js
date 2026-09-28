@@ -3,11 +3,11 @@ const PERMISSAO_GERENCIAR_SERVIDOR = 0x20n;
 
 async function trocarCodigoPorToken(code) {
   const body = new URLSearchParams({
-    redirect_uri: process.env.DISCORD_REDIRECT_URI || process.env.DISCORD_REDIRECT_URL,
+    client_id: process.env.DISCORD_CLIENT_ID,
     client_secret: process.env.DISCORD_CLIENT_SECRET,
     grant_type: "authorization_code",
     code,
-    redirect_uri: process.env.DISCORD_REDIRECT_URI,
+    redirect_uri: process.env.DISCORD_REDIRECT_URI || process.env.DISCORD_REDIRECT_URL,
   });
   const resposta = await fetch(`${API}/oauth2/token`, {
     method: "POST",
