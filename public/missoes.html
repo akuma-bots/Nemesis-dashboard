@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ñ - ÑÊMESIS // Missões</title>
+<link rel="stylesheet" href="/tema-nemesis.css">
+<style>
+  .pontos{font-size:.85rem;letter-spacing:.12em}
+  .sobreposicao{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .sobreposicao.aberta{display:flex}
+  .caixa-modal{background:var(--panel);border:1px solid var(--line);padding:30px;width:100%;max-width:440px}
+  .caixa-modal h3{margin:0 0 20px}
+</style>
+</head>
+<body>
+<main class="pagina">
+  <a class="voltar" href="/">← Voltar</a>
+  <h1>Missões</h1>
+  <p class="subtitulo">Complete missões PvP e PvE, envie o print como prova e ganhe pontos assim que a equipe aprovar.</p>
+  <p style="margin-top:26px"><a class="btn" href="competitivo.html">Ver ranking</a></p>
+
+  <h2 class="secao">PvP</h2>
+  <div class="grade" id="grade-pvp"><div class="cartao"><p class="vazio">Carregando…</p></div></div>
+
+  <h2 class="secao">PvE</h2>
+  <div class="grade" id="grade-pve"></div>
+</main>
+
+<div class="sobreposicao" id="modal">
+  <div class="caixa-modal">
+    <h3 id="modal-titulo">Enviar prova</h3>
+    <div class="campo"><label>Print de prova (até 1,5 MB)</label><input type="file" id="modal-arquivo" accept="image/*"></div>
+    <div class="linha-acoes">
+      <button class="btn btn-primario" id="modal-enviar" type="button">Enviar</button>
+      <button class="btn btn-secundario" id="modal-cancelar" type="button">Cancelar</button>
+    </div>
+    <p class="status" id="modal-aviso"></p>
+  </div>
+</div>
+
+<script>
+function h(tag, props, ...filhos) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e[k] = v;
+    else if (k !== 'value') e.setAttribute(k, v === true ? '' : v);
+  }
+  filhos.flat().forEach((f) => e.append(f instanceof Node ? f : document.createTextNode(f == null ? '' : f)));
+  if (props && props.value !== undefined) e.value = props.value;
+  return e;
+}
+const $ = (s) => document.querySelector(s);
+let selecionada = null;
+const modal = $('#modal');
+const arquivo = $('#modal-arquivo');
+const avisoModal = $('#modal-aviso');
+
+function cartao(m) {
+  return h('div', { class: 'cartao' },
+    h('span', { class: 'selo' }, String(m.tipo || '').toUpperCase()),
+    h('h3', {}, m.titulo),
+    h('p', { class: 'texto-suave' }, m.descricao || ''),
+    h('span', { class: 'pontos' }, '+' + m.pontos + ' pontos'),
+    h('button', { class: 'btn btn-primario', type: 'button', onclick: () => abrirModal(m) }, 'Enviar prova'));
+}
+
+function abrirModal(m) {
+  selecionada = m;
+  $('#modal-titulo').textContent = 'Enviar prova — ' + m.titulo;
+  arquivo.value = '';
+  avisoModal.textContent = '';
+  modal.classList.add('aberta');
+}
+
+$('#modal-cancelar').onclick = () => modal.classList.remove('aberta');
+
+$('#modal-enviar').onclick = () => {
+  const f = arquivo.files[0];
+  if (!f) { avisoModal.textContent = 'Escolha uma imagem primeiro.'; return; }
+  if (f.size > 1500000) { avisoModal.textContent = 'Imagem muito grande (máx. 1,5 MB).'; return; }
+  avisoModal.textContent = 'Enviando…';
+  const leitor = new FileReader();
+  leitor.onload = async () => {
+    try {
+      const r = await fetch('/.netlify/functions/missoes-enviar-prova', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ missaoId: selecionada.id, imagemBase64: leitor.result }),
+      });
+      if (r.status === 401) {
+        avisoModal.replaceChildren('Você precisa ', h('a', { href: '/login', style: 'text-decoration:underline' }, 'entrar com Discord'), ' primeiro.');
+        return;
+      }
+      if (!r.ok) { const d = await r.json().catch(() => ({})); avisoModal.textContent = d.erro || 'Não deu pra enviar.'; return; }
+      avisoModal.textContent = 'Enviado! Aguarde a equipe revisar.';
+      setTimeout(() => modal.classList.remove('aberta'), 1800);
+    } catch (e) {
+      avisoModal.textContent = 'Erro de conexão. Tente de novo.';
+    }
+  };
+  leitor.readAsDataURL(f);
+};
+
+function preencher(seletor, lista, textoVazio) {
+  $(seletor).replaceChildren(...(lista.length ? lista.map((m) => cartao(m)) : [h('div', { class: 'cartao' }, h('p', { class: 'vazio' }, textoVazio))]));
+}
+
+fetch('/.netlify/functions/missoes-get')
+  .then((r) => r.json())
+  .then((d) => {
+    const missoes = d.missoes || [];
+    preencher('#grade-pvp', missoes.filter((m) => m.tipo === 'pvp'), 'Nenhuma missão PvP ativa agora.');
+    preencher('#grade-pve', missoes.filter((m) => m.tipo === 'pve'), 'Nenhuma missão PvE ativa agora.');
+  })
+  .catch(() => {
+    $('#grade-pvp').replaceChildren(h('div', { class: 'cartao' }, h('p', { class: 'vazio' }, 'Não deu pra carregar agora.')));
+  });
+</script>
+</body>
+</html>
