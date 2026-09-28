@@ -425,7 +425,7 @@ function renderizarPatentes(d) {
 
   const rankingEl = document.getElementById("pt-ranking");
   rankingEl.innerHTML = ranking.length
-    ? ranking.map((r, i) => `<div class="lista-item"><span class="info"><span class="ranking-pos">#${i + 1}</span><@${r.userId}> — ${r.vitorias} vitórias (${escaparHtml(r.patente || "sem patente")})</span></div>`).join("")
+    ? ranking.map((r, i) => `<div class="lista-item"><span class="info"><span class="ranking-pos">#${i + 1}</span><@${r.discordId}> — ${r.vitorias} vitórias (${escaparHtml(r.patente || "sem patente")})</span></div>`).join("")
     : `<p class="descricao-aba">Ninguém com perfil registrado ainda.</p>`;
 
   function renderListaPatentes(lista) {
