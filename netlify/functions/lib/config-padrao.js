@@ -8,6 +8,11 @@ const PADRAO = {
   contadores: [],
   canal_denuncias_id: null,
   categoria_modmail_id: null,
+  ticket_painel_titulo: null,
+  ticket_painel_descricao: null,
+  ticket_painel_banner_url: null,
+  cargos_moderacao_total: [],
+  cargos_moderacao_basico: [],
 };
 
 function comPadrao(config) {
@@ -16,6 +21,8 @@ function comPadrao(config) {
     ...config,
     canais_cargo_automatico: (config && config.canais_cargo_automatico) || {},
     contadores: (config && config.contadores) || [],
+    cargos_moderacao_total: (config && config.cargos_moderacao_total) || [],
+    cargos_moderacao_basico: (config && config.cargos_moderacao_basico) || [],
   };
 }
 
