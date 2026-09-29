@@ -13,6 +13,8 @@ const CAMPOS_PERMITIDOS = [
   "ticket_painel_titulo",
   "ticket_painel_descricao",
   "ticket_painel_banner_url",
+  "cargos_moderacao_total",
+  "cargos_moderacao_basico",
 ];
 
 exports.handler = async (event) => {
