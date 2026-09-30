@@ -10,22 +10,27 @@
 <main class="pagina" style="max-width:860px">
   <a class="voltar" href="/">← Voltar</a>
   <h1>Editar Missões</h1>
-  <p class="sub">Cadastre missões PvP e PvE e revise os prints enviados como prova.</p>
+  <p class="sub">Cadastre missões, contribuições e missões especiais e revise os prints enviados como prova.</p>
 
   <div id="tela-carregando" class="estado-central"><p>Verificando login…</p></div>
   <div id="tela-login" class="estado-central" style="display:none"><p>Entre com Discord para editar.</p><a class="btn btn-primario" href="/login">Entrar com Discord</a></div>
   <div id="tela-negado" class="estado-central" style="display:none"><p>Você não gerencia o servidor da NÊMESIS.</p></div>
 
   <div id="tela-editor" style="display:none">
-    <div class="bloco"><h4>SUBMISSÕES PENDENTES</h4><div id="lista-pendentes"></div></div>
+    <div class="bloco">
+      <h4>SUBMISSÕES PENDENTES</h4>
+      <div id="lista-pendentes"></div>
+    </div>
 
     <div class="bloco">
       <h4>CATÁLOGO DE MISSÕES</h4>
       <div id="lista-missoes"></div>
+
       <div class="linha-acoes">
         <button class="btn btn-secundario" type="button" onclick="novaMissao()">+ Adicionar missão</button>
         <button class="btn btn-primario" type="button" onclick="salvar()">Salvar catálogo</button>
       </div>
+
       <p class="status" id="aviso"></p>
     </div>
   </div>
@@ -34,104 +39,413 @@
 <script>
 function h(tag, props, ...filhos) {
   const e = document.createElement(tag);
+
   for (const [k, v] of Object.entries(props || {})) {
     if (v === undefined || v === null || v === false) continue;
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e[k] = v;
-    else if (k !== 'value') e.setAttribute(k, v === true ? '' : v);
+
+    if (k === 'class') {
+      e.className = v;
+    } else if (k.startsWith('on')) {
+      e[k] = v;
+    } else if (k !== 'value') {
+      e.setAttribute(k, v === true ? '' : v);
+    }
   }
-  filhos.flat().forEach((f) => e.append(f instanceof Node ? f : document.createTextNode(f == null ? '' : f)));
-  if (props && props.value !== undefined) e.value = props.value;
+
+  filhos.flat().forEach((f) =>
+    e.append(
+      f instanceof Node
+        ? f
+        : document.createTextNode(f == null ? '' : f)
+    )
+  );
+
+  if (props && props.value !== undefined) {
+    e.value = props.value;
+  }
+
   return e;
 }
+
 const $ = (s) => document.querySelector(s);
+
 let missoes = [];
 let submissoes = [];
 
 function mostrar(id) {
-  ['tela-carregando', 'tela-login', 'tela-negado', 'tela-editor'].forEach((t) => { $('#' + t).style.display = t === id ? '' : 'none'; });
+  [
+    'tela-carregando',
+    'tela-login',
+    'tela-negado',
+    'tela-editor'
+  ].forEach((t) => {
+    $('#' + t).style.display = t === id ? '' : 'none';
+  });
 }
+
 function avisar(msg) {
-  const el = $('#aviso'); el.textContent = msg;
-  setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 4000);
+  const el = $('#aviso');
+
+  el.textContent = msg;
+
+  setTimeout(() => {
+    if (el.textContent === msg) {
+      el.textContent = '';
+    }
+  }, 4000);
 }
-function campo(rotulo, entrada) { return h('div', { class: 'campo' }, h('label', {}, rotulo), entrada); }
+
+function campo(rotulo, entrada) {
+  return h(
+    'div',
+    { class: 'campo' },
+    h('label', {}, rotulo),
+    entrada
+  );
+}
 
 async function iniciar() {
   let r;
-  try { r = await fetch('/.netlify/functions/missoes-admin-get'); } catch (e) { return mostrar('tela-login'); }
-  if (r.status === 401) return mostrar('tela-login');
-  if (r.status === 403) return mostrar('tela-negado');
+
+  try {
+    r = await fetch('/.netlify/functions/missoes-admin-get');
+  } catch (e) {
+    return mostrar('tela-login');
+  }
+
+  if (r.status === 401) {
+    return mostrar('tela-login');
+  }
+
+  if (r.status === 403) {
+    return mostrar('tela-negado');
+  }
+
   const d = await r.json();
+
   missoes = d.missoes || [];
   submissoes = d.submissoes || [];
-  desenharMissoes(); desenharPendentes(); mostrar('tela-editor');
+
+  desenharMissoes();
+  desenharPendentes();
+  mostrar('tela-editor');
 }
 
 function novaMissao() {
-  missoes.push({ id: 'missao_' + Date.now(), tipo: 'pvp', titulo: 'Nova missão', descricao: '', pontos: 10, ativa: true });
+  missoes.push({
+    id: 'missao_' + Date.now(),
+    tipo: 'pvp',
+    titulo: 'Nova missão',
+    descricao: '',
+    pontos: 10,
+    ativa: true
+  });
+
   desenharMissoes();
 }
 
 function desenharMissoes() {
-  $('#lista-missoes').replaceChildren(...(missoes.length ? missoes.map((m, i) => blocoMissao(m, i)) : [h('p', { class: 'vazio' }, 'Nenhuma missão ainda.')]));
+  $('#lista-missoes').replaceChildren(
+    ...(
+      missoes.length
+        ? missoes.map((m, i) => blocoMissao(m, i))
+        : [
+            h(
+              'p',
+              { class: 'vazio' },
+              'Nenhuma missão ainda.'
+            )
+          ]
+    )
+  );
 }
 
 function blocoMissao(m, i) {
-  return h('div', { class: 'bloco', style: 'background:var(--void)' },
-    h('div', { class: 'linha' },
-      campo('Título', h('input', { type: 'text', value: m.titulo || '', oninput: (e) => { m.titulo = e.target.value; } })),
-      campo('Tipo', h('select', { value: m.tipo, onchange: (e) => { m.tipo = e.target.value; } },
-        h('option', { value: 'pvp' }, 'PvP'), h('option', { value: 'pve' }, 'PvE')))),
-    campo('Descrição', h('textarea', { rows: '2', value: m.descricao || '', oninput: (e) => { m.descricao = e.target.value; } })),
-    campo('Pontos', h('input', { type: 'number', value: String(m.pontos || 0), oninput: (e) => { m.pontos = Number(e.target.value); } })),
-    h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: m.ativa, onchange: (e) => { m.ativa = e.target.checked; } }), 'Missão ativa (visível no site)'),
-    h('div', { class: 'linha-acoes' },
-      h('button', { class: 'btn btn-secundario btn-remover', type: 'button', onclick: () => { missoes.splice(i, 1); desenharMissoes(); } }, 'Remover')));
+  return h(
+    'div',
+    {
+      class: 'bloco',
+      style: 'background:var(--void)'
+    },
+
+    h(
+      'div',
+      { class: 'linha' },
+
+      campo(
+        'Título',
+        h('input', {
+          type: 'text',
+          value: m.titulo || '',
+          oninput: (e) => {
+            m.titulo = e.target.value;
+          }
+        })
+      ),
+
+      campo(
+        'Tipo',
+        h(
+          'select',
+          {
+            value: m.tipo,
+            onchange: (e) => {
+              m.tipo = e.target.value;
+            }
+          },
+
+          h(
+            'option',
+            { value: 'pvp' },
+            'Missão'
+          ),
+
+          h(
+            'option',
+            { value: 'pve' },
+            'Contribuição'
+          ),
+
+          h(
+            'option',
+            { value: 'especial' },
+            'Missão Especial'
+          )
+        )
+      )
+    ),
+
+    campo(
+      'Descrição',
+      h('textarea', {
+        rows: '2',
+        value: m.descricao || '',
+        oninput: (e) => {
+          m.descricao = e.target.value;
+        }
+      })
+    ),
+
+    campo(
+      'Pontos',
+      h('input', {
+        type: 'number',
+        value: String(m.pontos || 0),
+        oninput: (e) => {
+          m.pontos = Number(e.target.value);
+        }
+      })
+    ),
+
+    h(
+      'label',
+      { class: 'check' },
+
+      h('input', {
+        type: 'checkbox',
+        checked: m.ativa,
+        onchange: (e) => {
+          m.ativa = e.target.checked;
+        }
+      }),
+
+      'Missão ativa (visível no site)'
+    ),
+
+    h(
+      'div',
+      { class: 'linha-acoes' },
+
+      h(
+        'button',
+        {
+          class: 'btn btn-secundario btn-remover',
+          type: 'button',
+          onclick: () => {
+            missoes.splice(i, 1);
+            desenharMissoes();
+          }
+        },
+        'Remover'
+      )
+    )
+  );
 }
 
 async function salvar() {
-  const r = await fetch('/.netlify/functions/missoes-catalogo-save', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ missoes }),
-  });
-  if (r.status === 403) return mostrar('tela-negado');
-  avisar(r.ok ? 'Catálogo salvo.' : 'Não deu pra salvar.');
+  const r = await fetch(
+    '/.netlify/functions/missoes-catalogo-save',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ missoes })
+    }
+  );
+
+  if (r.status === 403) {
+    return mostrar('tela-negado');
+  }
+
+  avisar(
+    r.ok
+      ? 'Catálogo salvo.'
+      : 'Não deu pra salvar.'
+  );
 }
 
 function desenharPendentes() {
-  const pend = submissoes.filter((s) => s.status === 'pendente').sort((a, b) => b.criadoEm - a.criadoEm);
-  $('#lista-pendentes').replaceChildren(...(pend.length ? pend.map(cartaoPendente) : [h('p', { class: 'vazio' }, 'Nenhuma submissão pendente.')]));
+  const pend = submissoes
+    .filter((s) => s.status === 'pendente')
+    .sort((a, b) => b.criadoEm - a.criadoEm);
+
+  $('#lista-pendentes').replaceChildren(
+    ...(
+      pend.length
+        ? pend.map(cartaoPendente)
+        : [
+            h(
+              'p',
+              { class: 'vazio' },
+              'Nenhuma submissão pendente.'
+            )
+          ]
+    )
+  );
 }
 
 function cartaoPendente(s) {
-  const temImagem = String(s.imagemBase64 || '').startsWith('data:image/');
+  const temImagem =
+    String(s.imagemBase64 || '').startsWith('data:image/');
+
   const imagem = temImagem
-    ? h('img', { src: s.imagemBase64, alt: 'prova', style: 'width:140px;height:140px;object-fit:cover;border:1px solid var(--line)' })
-    : h('span', { class: 'texto-suave' }, '(sem imagem)');
-  return h('div', { class: 'bloco', style: 'background:var(--void);display:flex;gap:18px;flex-wrap:wrap' },
+    ? h('img', {
+        src: s.imagemBase64,
+        alt: 'prova',
+        style:
+          'width:140px;height:140px;object-fit:cover;border:1px solid var(--line)'
+      })
+    : h(
+        'span',
+        { class: 'texto-suave' },
+        '(sem imagem)'
+      );
+
+  return h(
+    'div',
+    {
+      class: 'bloco',
+      style:
+        'background:var(--void);display:flex;gap:18px;flex-wrap:wrap'
+    },
+
     imagem,
-    h('div', { style: 'flex:1;min-width:200px' },
-      h('strong', {}, s.nome),
-      h('p', { class: 'texto-suave', style: 'margin:6px 0' }, s.missaoTitulo + ' (+' + s.missaoPontos + ' pts)'),
-      h('p', { class: 'texto-suave', style: 'margin:0 0 12px;font-size:.8rem' }, 'Discord ID: ' + s.discordId),
-      h('div', { class: 'linha-acoes' },
-        h('button', { class: 'btn btn-secundario', type: 'button', style: 'background:var(--white);color:#000', onclick: () => revisar(s, 'aprovada') }, 'Aprovar'),
-        h('button', { class: 'btn btn-secundario btn-remover', type: 'button', onclick: () => revisar(s, 'recusada') }, 'Recusar'))));
+
+    h(
+      'div',
+      {
+        style:
+          'flex:1;min-width:200px'
+      },
+
+      h(
+        'strong',
+        {},
+        s.nome
+      ),
+
+      h(
+        'p',
+        {
+          class: 'texto-suave',
+          style: 'margin:6px 0'
+        },
+        s.missaoTitulo +
+          ' (+' +
+          s.missaoPontos +
+          ' pts)'
+      ),
+
+      h(
+        'p',
+        {
+          class: 'texto-suave',
+          style:
+            'margin:0 0 12px;font-size:.8rem'
+        },
+        'Discord ID: ' + s.discordId
+      ),
+
+      h(
+        'div',
+        { class: 'linha-acoes' },
+
+        h(
+          'button',
+          {
+            class: 'btn btn-secundario',
+            type: 'button',
+            style:
+              'background:var(--white);color:#000',
+            onclick: () =>
+              revisar(s, 'aprovada')
+          },
+          'Aprovar'
+        ),
+
+        h(
+          'button',
+          {
+            class:
+              'btn btn-secundario btn-remover',
+            type: 'button',
+            onclick: () =>
+              revisar(s, 'recusada')
+          },
+          'Recusar'
+        )
+      )
+    )
+  );
 }
 
 async function revisar(s, decisao) {
   let motivoRecusa = null;
+
   if (decisao === 'recusada') {
-    motivoRecusa = prompt('Motivo da recusa (opcional):');
-    if (motivoRecusa === null) return;
+    motivoRecusa = prompt(
+      'Motivo da recusa (opcional):'
+    );
+
+    if (motivoRecusa === null) {
+      return;
+    }
   }
-  const r = await fetch('/.netlify/functions/missoes-revisar', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ submissaoId: s.id, decisao, motivoRecusa }),
-  });
-  if (r.status === 403) return mostrar('tela-negado');
-  if (!r.ok) return avisar('Não deu pra revisar.');
+
+  const r = await fetch(
+    '/.netlify/functions/missoes-revisar',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        submissaoId: s.id,
+        decisao,
+        motivoRecusa
+      })
+    }
+  );
+
+  if (r.status === 403) {
+    return mostrar('tela-negado');
+  }
+
+  if (!r.ok) {
+    return avisar('Não deu pra revisar.');
+  }
+
   s.status = decisao;
   desenharPendentes();
 }
