@@ -5,9 +5,17 @@ const PADRAO = {
 
 function comPadrao(conteudo) {
   return {
-    missoes: (conteudo && conteudo.missoes) || PADRAO.missoes,
-    submissoes: (conteudo && conteudo.submissoes) || PADRAO.submissoes,
+    missoes: Array.isArray(conteudo?.missoes)
+      ? conteudo.missoes
+      : PADRAO.missoes,
+
+    submissoes: Array.isArray(conteudo?.submissoes)
+      ? conteudo.submissoes
+      : PADRAO.submissoes,
   };
 }
 
-module.exports = { PADRAO, comPadrao };
+module.exports = {
+  PADRAO,
+  comPadrao,
+};
