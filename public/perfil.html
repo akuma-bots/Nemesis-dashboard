@@ -1,0 +1,567 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Ñ - ÑÊMESIS // Perfil</title><link rel="stylesheet" href="/tema-nemesis.css"><style>
+.perfil-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 24px;
+  margin-bottom: 18px;
+  background: var(--void);
+  border: 1px solid var(--line);
+}
+
+.avatar {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #111;
+  border: 2px solid var(--line);
+}
+
+.perfil-identidade h2 {
+  margin: 0 0 5px;
+}
+
+.perfil-identidade p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.grade-estatisticas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.estatistica {
+  padding: 20px;
+  background: var(--void);
+  border: 1px solid var(--line);
+}
+
+.estatistica .valor {
+  display: block;
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+.estatistica .nome {
+  color: var(--muted);
+  font-size: .82rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.bloco-perfil {
+  margin-bottom: 18px;
+}
+
+.progresso {
+  width: 100%;
+  height: 9px;
+  margin-top: 12px;
+  background: #171717;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.progresso span {
+  display: block;
+  height: 100%;
+  width: 70%;
+  background: var(--white);
+}
+
+.linha-ranking {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.linha-ranking:last-child {
+  border-bottom: 0;
+}
+
+.vazio {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+}
+
+@media (max-width: 700px) {
+  .grade-estatisticas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .perfil-header {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 450px) {
+  .grade-estatisticas {
+    grid-template-columns: 1fr;
+  }
+
+  .avatar {
+    width: 65px;
+    height: 65px;
+  }
+}
+</style></head><body><main class="pagina" style="max-width:900px"><a class="voltar" href="/">← Voltar</a>
+
+  <h1>Meu Perfil</h1>  <p class="sub">
+    Consulte seu desempenho, contribuição e progresso dentro da NÊMESIS.
+  </p>  <div id="tela-carregando" class="estado-central">
+    <p>Carregando perfil…</p>
+  </div>  <div id="tela-login" class="estado-central" style="display:none">
+    <p>Entre com Discord para visualizar seu perfil.</p><a class="btn btn-primario" href="/login">
+  Entrar com Discord
+</a>
+
+  </div>  <div id="tela-perfil" style="display:none"><section class="perfil-header">
+
+  <img
+    id="avatar"
+    class="avatar"
+    src=""
+    alt="Avatar do usuário"
+  >
+
+  <div class="perfil-identidade">
+    <h2 id="nome">Usuário</h2>
+    <p id="cargo">Membro da NÊMESIS</p>
+  </div>
+
+</section>
+
+
+<section class="bloco-perfil">
+
+  <div class="bloco">
+
+    <h4>ESTATÍSTICAS</h4>
+
+    <div class="grade-estatisticas">
+
+      <div class="estatistica">
+        <span class="nome">P.C.</span>
+        <span class="valor" id="pontos">0</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Vitórias</span>
+        <span class="valor" id="vitorias">0</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Derrotas</span>
+        <span class="valor" id="derrotas">0</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Taxa de Vitória</span>
+        <span class="valor" id="taxa">0%</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Missões</span>
+        <span class="valor" id="missoes">0</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Contribuições</span>
+        <span class="valor" id="contribuicoes">0</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Missões Especiais</span>
+        <span class="valor" id="especiais">0</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Atividades</span>
+        <span class="valor" id="atividades">0</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Ranking</span>
+        <span class="valor" id="ranking">#—</span>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<section class="bloco-perfil">
+
+  <div class="bloco">
+
+    <h4>PROGRESSO</h4>
+
+    <div class="linha-ranking">
+      <span>Cargo atual</span>
+      <strong id="cargoAtual">Membro</strong>
+    </div>
+
+    <div class="linha-ranking">
+      <span>Próximo cargo</span>
+      <strong id="proximoCargo">—</strong>
+    </div>
+
+    <div class="linha-ranking">
+      <span>P.C. necessários</span>
+      <strong id="pontosProximo">—</strong>
+    </div>
+
+    <div class="progresso">
+      <span id="barraProgresso"></span>
+    </div>
+
+    <p
+      id="textoProgresso"
+      class="texto-suave"
+      style="margin-top:8px"
+    >
+      0% de progresso
+    </p>
+
+  </div>
+
+</section>
+
+
+<section class="bloco-perfil">
+
+  <div class="bloco">
+
+    <h4>RESUMO</h4>
+
+    <div class="linha-ranking">
+      <span>Total de missões concluídas</span>
+      <strong id="totalMissoes">0</strong>
+    </div>
+
+    <div class="linha-ranking">
+      <span>Total de contribuições</span>
+      <strong id="totalContribuicoes">0</strong>
+    </div>
+
+    <div class="linha-ranking">
+      <span>Total de missões especiais</span>
+      <strong id="totalEspeciais">0</strong>
+    </div>
+
+    <div class="linha-ranking">
+      <span>Total de atividades</span>
+      <strong id="totalAtividades">0</strong>
+    </div>
+
+  </div>
+
+</section>
+
+  </div></main><script>
+
+const $ = (seletor) => document.querySelector(seletor);
+
+function mostrar(id) {
+
+  [
+    'tela-carregando',
+    'tela-login',
+    'tela-perfil'
+  ].forEach((tela) => {
+
+    const elemento = $('#' + tela);
+
+    if (elemento) {
+      elemento.style.display =
+        tela === id ? '' : 'none';
+    }
+
+  });
+
+}
+
+
+function numero(valor) {
+
+  const n = Number(valor);
+
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
+
+  return n;
+}
+
+
+function porcentagem(valor) {
+
+  return Math.max(
+    0,
+    Math.min(100, numero(valor))
+  );
+}
+
+
+function preencherPerfil(dados) {
+
+  const usuario = dados.usuario || dados.perfil || dados;
+
+  const estatisticas =
+    dados.estatisticas ||
+    usuario.estatisticas ||
+    {};
+
+  const ranking =
+    dados.ranking ??
+    estatisticas.ranking ??
+    usuario.ranking ??
+    null;
+
+  const pontos =
+    numero(
+      estatisticas.pontos ??
+      estatisticas.pc ??
+      usuario.pontos ??
+      usuario.pc
+    );
+
+  const vitorias =
+    numero(
+      estatisticas.vitorias ??
+      usuario.vitorias
+    );
+
+  const derrotas =
+    numero(
+      estatisticas.derrotas ??
+      usuario.derrotas
+    );
+
+  const missoes =
+    numero(
+      estatisticas.missoes ??
+      usuario.missoes
+    );
+
+  const contribuicoes =
+    numero(
+      estatisticas.contribuicoes ??
+      usuario.contribuicoes
+    );
+
+  const especiais =
+    numero(
+      estatisticas.especiais ??
+      estatisticas.missoesEspeciais ??
+      usuario.especiais ??
+      usuario.missoesEspeciais
+    );
+
+  const atividades =
+    numero(
+      estatisticas.atividades ??
+      usuario.atividades ??
+      (missoes + contribuicoes + especiais)
+    );
+
+
+  const partidas =
+    vitorias + derrotas;
+
+  const taxa =
+    partidas > 0
+      ? ((vitorias / partidas) * 100)
+      : 0;
+
+
+  const nome =
+    usuario.nome ||
+    usuario.username ||
+    usuario.globalName ||
+    'Usuário';
+
+  const cargo =
+    usuario.cargo ||
+    usuario.role ||
+    'Membro';
+
+
+  $('#nome').textContent = nome;
+
+  $('#cargo').textContent =
+    cargo + ' • NÊMESIS';
+
+
+  if (usuario.avatar) {
+    $('#avatar').src = usuario.avatar;
+  } else {
+
+    $('#avatar').src =
+      'https://cdn.discordapp.com/embed/avatars/0.png';
+
+  }
+
+
+  $('#pontos').textContent =
+    pontos.toLocaleString('pt-BR');
+
+  $('#vitorias').textContent =
+    vitorias.toLocaleString('pt-BR');
+
+  $('#derrotas').textContent =
+    derrotas.toLocaleString('pt-BR');
+
+  $('#taxa').textContent =
+    taxa.toFixed(1).replace('.', ',') + '%';
+
+  $('#missoes').textContent =
+    missoes.toLocaleString('pt-BR');
+
+  $('#contribuicoes').textContent =
+    contribuicoes.toLocaleString('pt-BR');
+
+  $('#especiais').textContent =
+    especiais.toLocaleString('pt-BR');
+
+  $('#atividades').textContent =
+    atividades.toLocaleString('pt-BR');
+
+  $('#ranking').textContent =
+    ranking === null
+      ? '#—'
+      : '#' + ranking;
+
+
+  $('#totalMissoes').textContent =
+    missoes.toLocaleString('pt-BR');
+
+  $('#totalContribuicoes').textContent =
+    contribuicoes.toLocaleString('pt-BR');
+
+  $('#totalEspeciais').textContent =
+    especiais.toLocaleString('pt-BR');
+
+  $('#totalAtividades').textContent =
+    atividades.toLocaleString('pt-BR');
+
+
+  const progresso =
+    numero(
+      dados.progresso ??
+      estatisticas.progresso ??
+      usuario.progresso
+    );
+
+  const proximoCargo =
+    dados.proximoCargo ??
+    usuario.proximoCargo ??
+    '—';
+
+  const pontosProximo =
+    dados.pontosProximo ??
+    usuario.pontosProximo ??
+    '—';
+
+
+  $('#cargoAtual').textContent =
+    cargo;
+
+  $('#proximoCargo').textContent =
+    proximoCargo;
+
+  $('#pontosProximo').textContent =
+    pontosProximo;
+
+
+  const progressoSeguro =
+    porcentagem(progresso);
+
+  $('#barraProgresso').style.width =
+    progressoSeguro + '%';
+
+  $('#textoProgresso').textContent =
+    progressoSeguro.toFixed(0) +
+    '% de progresso';
+
+
+  mostrar('tela-perfil');
+
+}
+
+
+async function iniciar() {
+
+  mostrar('tela-carregando');
+
+  try {
+
+    /*
+     * Endpoint preparado para o backend.
+     *
+     * Quando o backend estiver configurado,
+     * ele deverá retornar os dados do usuário
+     * autenticado pelo Discord.
+     */
+
+    const resposta =
+      await fetch(
+        '/.netlify/functions/perfil'
+      );
+
+
+    if (resposta.status === 401) {
+
+      mostrar('tela-login');
+
+      return;
+
+    }
+
+
+    if (!resposta.ok) {
+
+      throw new Error(
+        'Não foi possível carregar o perfil.'
+      );
+
+    }
+
+
+    const dados =
+      await resposta.json();
+
+
+    preencherPerfil(dados);
+
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao carregar perfil:',
+      erro
+    );
+
+    mostrar('tela-login');
+
+  }
+
+}
+
+
+iniciar();
+
+</script></body>
+</html>
