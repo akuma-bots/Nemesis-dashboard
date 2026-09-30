@@ -367,6 +367,11 @@ h1{
 let missoes = [];
 let submissoes = [];
 
+
+/* =========================
+   CONTROLE DE TELAS
+========================= */
+
 function mostrar(id){
 
   [
@@ -382,6 +387,11 @@ function mostrar(id){
   });
 
 }
+
+
+/* =========================
+   STATUS
+========================= */
 
 function avisar(idStatus,msg){
 
@@ -400,6 +410,11 @@ function avisar(idStatus,msg){
 
 }
 
+
+/* =========================
+   SEGURANÇA HTML
+========================= */
+
 function escaparHtml(texto){
 
   return String(texto ?? '').replace(
@@ -414,6 +429,11 @@ function escaparHtml(texto){
   );
 
 }
+
+
+/* =========================
+   NOMES DAS CATEGORIAS
+========================= */
 
 function nomeTipo(tipo){
 
@@ -437,6 +457,11 @@ function nomeTipo(tipo){
   }
 
 }
+
+
+/* =========================
+   INICIALIZAÇÃO
+========================= */
 
 async function iniciar(){
 
@@ -501,6 +526,11 @@ async function iniciar(){
 
 }
 
+
+/* =========================
+   RENDERIZAR MISSÕES
+========================= */
+
 function renderMissoes(){
 
   const lista =
@@ -515,6 +545,17 @@ function renderMissoes(){
 
     div.className =
       'item-editor';
+
+    const tipoAtual =
+      String(m.tipo || '').toLowerCase();
+
+    const ehEspecial =
+      [
+        'especial',
+        'especiais',
+        'missao_especial',
+        'missao-especial'
+      ].includes(tipoAtual);
 
     div.innerHTML = `
 
@@ -535,43 +576,38 @@ function renderMissoes(){
 
         </div>
 
+
         <div class="campo">
 
           <label>
-            Tipo
+            Tipo da missão
           </label>
 
           <select
             data-i="${i}"
             data-campo="tipo"
+            aria-label="Tipo da missão"
           >
 
             <option
               value="pvp"
-              ${m.tipo === 'pvp' ? 'selected' : ''}
+              ${tipoAtual === 'pvp' ? 'selected' : ''}
             >
               Missão
             </option>
 
+
             <option
               value="pve"
-              ${m.tipo === 'pve' ? 'selected' : ''}
+              ${tipoAtual === 'pve' ? 'selected' : ''}
             >
               Contribuição
             </option>
 
+
             <option
               value="especial"
-              ${
-                [
-                  'especial',
-                  'especiais',
-                  'missao_especial',
-                  'missao-especial'
-                ].includes(String(m.tipo).toLowerCase())
-                ? 'selected'
-                : ''
-              }
+              ${ehEspecial ? 'selected' : ''}
             >
               Missão Especial
             </option>
@@ -581,6 +617,7 @@ function renderMissoes(){
         </div>
 
       </div>
+
 
       <div class="campo">
 
@@ -595,6 +632,7 @@ function renderMissoes(){
         >${escaparHtml(m.descricao || '')}</textarea>
 
       </div>
+
 
       <div
         class="campo"
@@ -613,6 +651,7 @@ function renderMissoes(){
         >
 
       </div>
+
 
       <div class="checkbox-linha">
 
@@ -633,6 +672,7 @@ function renderMissoes(){
 
       </div>
 
+
       <div class="linha-acoes">
 
         <button
@@ -643,11 +683,13 @@ function renderMissoes(){
         </button>
 
       </div>
+
     `;
 
     lista.appendChild(div);
 
   });
+
 
   lista
     .querySelectorAll(
@@ -669,6 +711,7 @@ function renderMissoes(){
 
           const k =
             e.target.dataset.campo;
+
 
           if(k === 'ativa'){
 
@@ -693,6 +736,11 @@ function renderMissoes(){
     });
 
 }
+
+
+/* =========================
+   ADICIONAR MISSÃO
+========================= */
 
 function adicionarMissao(){
 
@@ -723,6 +771,11 @@ function adicionarMissao(){
 
 }
 
+
+/* =========================
+   REMOVER MISSÃO
+========================= */
+
 function removerMissao(i){
 
   missoes.splice(i,1);
@@ -730,6 +783,11 @@ function removerMissao(i){
   renderMissoes();
 
 }
+
+
+/* =========================
+   SALVAR CATÁLOGO
+========================= */
 
 async function salvarMissoes(){
 
@@ -753,6 +811,7 @@ async function salvarMissoes(){
         }
       );
 
+
     if(resp.status === 403){
 
       mostrar(
@@ -762,6 +821,7 @@ async function salvarMissoes(){
       return;
 
     }
+
 
     if(!resp.ok){
 
@@ -776,6 +836,7 @@ async function salvarMissoes(){
       );
 
     }
+
 
     avisar(
       'status-missoes',
@@ -794,6 +855,11 @@ async function salvarMissoes(){
 
 }
 
+
+/* =========================
+   SUBMISSÕES PENDENTES
+========================= */
+
 function renderPendentes(){
 
   const lista =
@@ -806,6 +872,7 @@ function renderPendentes(){
       s => s.status === 'pendente'
     );
 
+
   if(!pendentes.length){
 
     lista.innerHTML =
@@ -815,7 +882,9 @@ function renderPendentes(){
 
   }
 
+
   lista.innerHTML = '';
+
 
   pendentes.forEach(s => {
 
@@ -824,6 +893,7 @@ function renderPendentes(){
 
     div.className =
       'submissao';
+
 
     div.innerHTML = `
 
@@ -849,6 +919,7 @@ function renderPendentes(){
           ${escaparHtml(s.discordId)}
         </span>
 
+
         <div class="linha-acoes">
 
           <button
@@ -859,6 +930,7 @@ function renderPendentes(){
           >
             Aprovar
           </button>
+
 
           <button
             class="btn-secundario btn-remover"
@@ -871,11 +943,13 @@ function renderPendentes(){
         </div>
 
       </div>
+
     `;
 
     lista.appendChild(div);
 
   });
+
 
   lista
     .querySelectorAll('button')
@@ -888,6 +962,7 @@ function renderPendentes(){
 
         let motivoRecusa = null;
 
+
         if(decisao === 'recusada'){
 
           motivoRecusa =
@@ -896,6 +971,7 @@ function renderPendentes(){
             ) || '';
 
         }
+
 
         try{
 
@@ -924,6 +1000,7 @@ function renderPendentes(){
               }
             );
 
+
           if(resp.status === 403){
 
             mostrar(
@@ -934,11 +1011,13 @@ function renderPendentes(){
 
           }
 
+
           if(!resp.ok){
 
             throw new Error();
 
           }
+
 
           const dados =
             await (
@@ -947,10 +1026,12 @@ function renderPendentes(){
               )
             ).json();
 
+
           submissoes =
             dados.submissoes || [];
 
           renderPendentes();
+
 
         }catch(e){
 
@@ -965,6 +1046,11 @@ function renderPendentes(){
     });
 
 }
+
+
+/* =========================
+   INICIAR
+========================= */
 
 iniciar();
 
