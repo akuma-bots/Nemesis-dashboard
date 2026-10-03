@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ñ - ÑÊMESIS // Editar Competitivo</title>
+<link rel="stylesheet" href="/tema-nemesis.css">
+<style>
+  .item-editor{border:1px solid var(--line);padding:16px;margin-bottom:12px;background:#000}
+  table.perfis{width:100%;border-collapse:collapse;font-size:.85rem}
+  table.perfis th,table.perfis td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}
+  table.perfis th{color:var(--steel);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;font-weight:400}
+</style>
+</head>
+<body>
+<main class="pagina" style="max-width:860px">
+  <a class="voltar" href="/">← Voltar</a>
+  <h1>Editar Competitivo</h1>
+  <p class="sub">Catálogo de pontos e perfis do ranking (pontos, elo, vitórias e derrotas).</p>
+
+  <div id="tela-carregando" class="estado-central"><p>Verificando login…</p></div>
+
+  <div id="tela-login" class="estado-central" style="display:none">
+    <p>Entre com Discord para editar.</p>
+    <a class="btn btn-primario" href="/login">Entrar com Discord</a>
+  </div>
+
+  <div id="tela-negado" class="estado-central" style="display:none">
+    <p>Você não gerencia o servidor da NÊMESIS.</p>
+  </div>
+
+  <div id="tela-erro" class="estado-central" style="display:none">
+    <p id="texto-erro">Não foi possível carregar o competitivo.</p>
+    <button class="btn" type="button" onclick="iniciar()">Tentar de novo</button>
+  </div>
+
+  <div id="tela-editor" style="display:none">
+
+    <div class="bloco">
+      <h4>CATÁLOGO DE AÇÕES / PONTOS</h4>
+      <div id="lista-catalogo"></div>
+      <div class="linha-acoes">
+        <button class="btn btn-secundario" type="button" onclick="adicionarAcao()">+ Adicionar ação</button>
+        <button class="btn btn-primario" type="button" onclick="salvarCatalogo()">Salvar catálogo</button>
+      </div>
+      <p class="status" id="status-catalogo"></p>
+    </div>
+
+    <div class="bloco">
+      <h4>APLICAR AÇÃO EM ALGUÉM</h4>
+      <div class="linha">
+        <div class="campo"><label>ID do Discord</label><input type="text" id="ap-discord-id" placeholder="ex: 123456789012345678" inputmode="numeric"></div>
+        <div class="campo"><label>Nome (para exibir no ranking)</label><input type="text" id="ap-nome" placeholder="ex: akuma_hell"></div>
+      </div>
+      <div class="linha">
+        <div class="campo"><label>Ação do catálogo</label><select id="ap-acao"></select></div>
+        <div class="campo"><label>Variação de Elo (opcional)</label><input type="number" id="ap-elo-delta" placeholder="ex: 25 ou -18"></div>
+      </div>
+      <div class="campo">
+        <label>Resultado (conta Vitória/Derrota, opcional)</label>
+        <select id="ap-resultado">
+          <option value="">— não conta V/D —</option>
+          <option value="vitoria">Vitória</option>
+          <option value="derrota">Derrota</option>
+        </select>
+      </div>
+      <button class="btn btn-primario" type="button" id="btn-aplicar" onclick="aplicarAcao()">Aplicar</button>
+      <p class="status" id="status-aplicar"></p>
+    </div>
+
+    <div class="bloco">
+      <h4>PERFIS NO RANKING</h4>
+      <div style="overflow-x:auto">
+        <table class="perfis">
+          <thead><tr><th>Nome</th><th>Pontos</th><th>Elo</th><th>V</th><th>D</th><th></th></tr></thead>
+          <tbody id="corpo-perfis"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const GUILD_NEMESIS = "1543381737961160910";
+  let catalogo = [];
+  let perfis = [];
+
+  function esc(t) {
+    return String(t ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+
+  function mostrar(id) {
+    ["tela-carregando", "tela-login", "tela-negado", "tela-erro", "tela-editor"].forEach((t) => {
+      document.getElementById(t).style.display = t === id ? "" : "none";
+    });
+  }
+
+  function avisar(idStatus, msg) {
+    const el = document.getElementById(idStatus);
+    el.textContent = msg;
+    setTimeout(() => { if (el.textContent === msg) el.textContent = ""; }, 5000);
+  }
+
+  async function chamar(caminho, opcoes) {
+    const resp = await fetch(caminho, opcoes);
+    if (resp.status === 401) { mostrar("tela-login"); throw new Error("login"); }
+    if (resp.status === 403) { mostrar("tela-negado"); throw new Error("negado"); }
+    let dados = {};
+    try { dados = await resp.json(); } catch (e) {}
+    if (!resp.ok) throw new Error(dados.erro || "erro " + resp.status);
+    return dados;
+  }
+
+  function postar(caminho, corpo) {
+    return chamar(caminho, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corpo),
+    });
+  }
+
+  async function recarregarRanking() {
+    const dados = await chamar("/api/competitivo-get");
+    catalogo = Array.isArray(dados.catalogo) ? dados.catalogo : catalogo;
+    perfis = Array.isArray(dados.ranking) ? dados.ranking : [];
+    return dados;
+  }
+
+  async function iniciar() {
+    mostrar("tela-carregando");
+    try {
+      const eu = await chamar("/api/me");
+      const gerencia = (eu.servidores || []).some((s) => s.id === GUILD_NEMESIS);
+      if (!gerencia) { mostrar("tela-negado"); return; }
+
+      await recarregarRanking();
+      renderCatalogo();
+      renderSelectAcoes();
+      renderPerfis();
+      mostrar("tela-editor");
+    } catch (e) {
+      if (e.message === "login" || e.message === "negado") return;
+      document.getElementById("texto-erro").textContent = "Erro ao carregar: " + e.message;
+      mostrar("tela-erro");
+    }
+  }
+
+  function renderCatalogo() {
+    const lista = document.getElementById("lista-catalogo");
+    lista.innerHTML = "";
+
+    catalogo.forEach((item, i) => {
+      const div = document.createElement("div");
+      div.className = "item-editor";
+      div.innerHTML = `
+        <div class="linha">
+          <div class="campo"><label>Nome</label>
+            <input type="text" data-i="${i}" data-campo="nome" value="${esc(item.nome)}"></div>
+          <div class="campo"><label>Pontos (negativo = penalidade)</label>
+            <input type="number" data-i="${i}" data-campo="pontos" value="${esc(item.pontos)}"></div>
+        </div>
+        <div class="campo"><label>Grupo (onde aparece na página)</label>
+          <select data-i="${i}" data-campo="grupo">
+            <option value="pontos" ${item.grupo === "pontos" ? "selected" : ""}>Como ganhar pontos</option>
+            <option value="bonus" ${item.grupo === "bonus" ? "selected" : ""}>Bônus de atividade</option>
+            <option value="penalidade" ${item.grupo === "penalidade" ? "selected" : ""}>Penalidades</option>
+          </select></div>
+        <div class="linha-acoes">
+          <button class="btn btn-secundario btn-remover" type="button" data-remover="${i}">Remover</button>
+        </div>`;
+      lista.appendChild(div);
+    });
+
+    lista.querySelectorAll("input,select").forEach((campo) => {
+      campo.addEventListener("input", (e) => {
+        const i = Number(e.target.dataset.i);
+        const k = e.target.dataset.campo;
+        if (!catalogo[i]) return;
+        catalogo[i][k] = k === "pontos" ? Number(e.target.value) || 0 : e.target.value;
+        renderSelectAcoes();
+      });
+    });
+
+    lista.querySelectorAll("[data-remover]").forEach((btn) => {
+      btn.onclick = () => {
+        catalogo.splice(Number(btn.dataset.remover), 1);
+        renderCatalogo();
+        renderSelectAcoes();
+      };
+    });
+  }
+
+  function adicionarAcao() {
+    catalogo.push({ id: "nova-" + Date.now(), nome: "Nova ação", pontos: 10, grupo: "pontos" });
+    renderCatalogo();
+    renderSelectAcoes();
+  }
+
+  async function salvarCatalogo() {
+    const vazio = catalogo.some((a) => !String(a.nome || "").trim());
+    if (vazio) { avisar("status-catalogo", "Toda ação precisa ter nome."); return; }
+
+    try {
+      await postar("/api/competitivo-catalogo-save", { catalogo });
+      avisar("status-catalogo", "Catálogo salvo — já vale para todo mundo.");
+    } catch (e) {
+      if (e.message === "login" || e.message === "negado") return;
+      avisar("status-catalogo", "Não deu para salvar: " + e.message);
+    }
+  }
+
+  function renderSelectAcoes() {
+    const select = document.getElementById("ap-acao");
+    const atual = select.value;
+    select.innerHTML = catalogo
+      .map((a, i) => `<option value="${i}">${esc(a.nome)} (${a.pontos > 0 ? "+" : ""}${esc(a.pontos)})</option>`)
+      .join("");
+    if (atual && catalogo[Number(atual)]) select.value = atual;
+  }
+
+  async function aplicarAcao() {
+    const discordId = document.getElementById("ap-discord-id").value.trim();
+    const nome = document.getElementById("ap-nome").value.trim();
+    const acao = catalogo[document.getElementById("ap-acao").value];
+    const eloDelta = Number(document.getElementById("ap-elo-delta").value) || 0;
+    const resultado = document.getElementById("ap-resultado").value;
+    const botao = document.getElementById("btn-aplicar");
+
+    if (!/^\d{15,22}$/.test(discordId)) { avisar("status-aplicar", "O ID do Discord deve ter só números (17 a 19 dígitos)."); return; }
+    if (!acao) { avisar("status-aplicar", "Escolha uma ação."); return; }
+
+    botao.disabled = true;
+    try {
+      // pega os números mais recentes para não sobrescrever alterações feitas por outra pessoa
+      await recarregarRanking();
+
+      const atual = perfis.find((p) => p.discordId === discordId)
+        || { pontos: 0, elo: 1000, vitorias: 0, derrotas: 0 };
+
+      const novo = {
+        discordId,
+        nome: nome || atual.nome || discordId,
+        pontos: atual.pontos + acao.pontos,
+        elo: Math.max(0, atual.elo + eloDelta),
+        vitorias: atual.vitorias + (resultado === "vitoria" ? 1 : 0),
+        derrotas: atual.derrotas + (resultado === "derrota" ? 1 : 0),
+      };
+
+      await postar("/api/competitivo-perfil-save", novo);
+      avisar("status-aplicar", `Aplicado: ${acao.nome} em ${novo.nome}.`);
+
+      document.getElementById("ap-discord-id").value = "";
+      document.getElementById("ap-nome").value = "";
+      document.getElementById("ap-elo-delta").value = "";
+      document.getElementById("ap-resultado").value = "";
+
+      await recarregarRanking();
+      renderPerfis();
+    } catch (e) {
+      if (e.message === "login" || e.message === "negado") return;
+      avisar("status-aplicar", "Não deu para aplicar: " + e.message);
+    } finally {
+      botao.disabled = false;
+    }
+  }
+
+  function renderPerfis() {
+    const corpo = document.getElementById("corpo-perfis");
+
+    if (!perfis.length) {
+      corpo.innerHTML = '<tr><td colspan="6" style="color:var(--steel)">Ninguém no ranking ainda.</td></tr>';
+      return;
+    }
+
+    corpo.innerHTML = perfis.map((p) => `
+      <tr>
+        <td>${esc(p.nome)}</td>
+        <td>${esc(p.pontos)}</td>
+        <td>${esc(p.elo)} (${esc(p.rank)})</td>
+        <td>${esc(p.vitorias)}</td>
+        <td>${esc(p.derrotas)}</td>
+        <td><button class="btn btn-secundario btn-remover" type="button" data-id="${esc(p.discordId)}">remover</button></td>
+      </tr>`).join("");
+
+    corpo.querySelectorAll("button").forEach((btn) => {
+      btn.onclick = async () => {
+        if (!confirm("Remover esse perfil do ranking?")) return;
+        try {
+          await postar("/api/competitivo-perfil-remover", { discordId: btn.dataset.id });
+          await recarregarRanking();
+          renderPerfis();
+        } catch (e) {
+          if (e.message === "login" || e.message === "negado") return;
+          avisar("status-aplicar", "Não deu para remover: " + e.message);
+        }
+      };
+    });
+  }
+
+  iniciar();
+</script>
+</body>
+</html>
