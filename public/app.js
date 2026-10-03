@@ -1021,7 +1021,9 @@ async function renderizarTickets(d) {
       `/api/ticket-tipos-get?guildId=${servidorAtual}`
     );
 
-    tipos = resp.tipos;
+    tipos = Array.isArray(resp.tipos)
+      ? resp.tipos
+      : [];
   } catch (e) {
     el.innerHTML = `
       <p class="aviso erro">
@@ -1199,66 +1201,82 @@ async function renderizarTickets(d) {
         "tk-lista-tipos"
       );
 
-    lista.innerHTML = tipos
-      .map(
-        (t) => `
-          <div class="lista-item">
+    if (!lista) {
+      return;
+    }
 
-            <span class="info">
+    lista.innerHTML = tipos.length
+      ? tipos
+          .map(
+            (t) => `
+              <div class="lista-item">
 
-              ${escaparHtml(
-                t.emoji || "🎫"
-              )}
+                <span class="info">
 
-              <strong>
-                ${escaparHtml(t.label)}
-              </strong>
+                  ${escaparHtml(
+                    t.emoji || "🎫"
+                  )}
 
-              (
-              <code>
-                ${escaparHtml(t.valor)}
-              </code>
-              )
+                  <strong>
+                    ${escaparHtml(
+                      t.label || ""
+                    )}
+                  </strong>
 
-              ${
-                t.usa_ia
-                  ? " — usa IA"
-                  : ""
-              }
+                  (
+                  <code>
+                    ${escaparHtml(
+                      t.valor || ""
+                    )}
+                  </code>
+                  )
 
-              <br>
+                  ${
+                    t.usa_ia
+                      ? " — usa IA"
+                      : ""
+                  }
 
-              <span
-                style="color:var(--steel)"
-              >
-                ${escaparHtml(
-                  t.descricao
-                )}
-              </span>
+                  <br>
 
-            </span>
+                  <span
+                    style="color:var(--steel)"
+                  >
+                    ${escaparHtml(
+                      t.descricao || ""
+                    )}
+                  </span>
 
-            <button
-              data-valor="${escaparHtml(
-                t.valor
-              )}"
-            >
-              remover
-            </button>
+                </span>
 
-          </div>
-        `
-      )
-      .join("");
+                <button
+                  data-valor="${escaparHtml(
+                    t.valor || ""
+                  )}"
+                >
+                  remover
+                </button>
+
+              </div>
+            `
+          )
+          .join("")
+      : `
+          <p class="descricao-aba">
+            Nenhuma categoria cadastrada.
+          </p>
+        `;
 
     lista
       .querySelectorAll("button")
       .forEach((btn) => {
         btn.onclick = async () => {
+          const valor =
+            btn.dataset.valor;
+
           tipos = tipos.filter(
             (t) =>
-              t.valor !==
-              btn.dataset.valor
+              t.valor !== valor
           );
 
           await salvarTipos();
@@ -1329,7 +1347,8 @@ async function renderizarTickets(d) {
       slugificar(label);
 
     tipos = tipos.filter(
-      (t) => t.valor !== valor
+      (t) =>
+        t.valor !== valor
     );
 
     tipos.push({
@@ -1373,155 +1392,19 @@ async function renderizarTickets(d) {
         }
       );
 
-      config.ticket_painel_titulo =
-        r.config.ticket_painel_titulo;
+      if (r.config) {
+        config.ticket_painel_titulo =
+          r.config
+            .ticket_painel_titulo;
 
-      config.ticket_painel_descricao =
-        r.config.ticket_painel_descricao;
+        config.ticket_painel_descricao =
+          r.config
+            .ticket_painel_descricao;
 
-      config.ticket_painel_banner_url =
-        r.config.ticket_painel_banner_url;
-
-      mostrarAviso(
-        "aba-tickets",
-        "Painel salvo. Rode /ticket-painel de novo no Discord pra publicar.",
-        "sucesso"
-      );
-    } catch (e) {
-      mostrarAviso(
-        "aba-tickets",
-        e.message,
-        "erro"
-      );
-    }
-  }
-
-  render();
-}
-        <div class="campo"><label>Nome</label><input id="tk-novo-label" placeholder="ex: Denúncias"></div>
-        <div class="campo"><label>Emoji (opcional)</label><input id="tk-novo-emoji" placeholder="🎫"></div>
-      </div>
-      <div class="campo"><label>Descrição (aparece embaixo do nome no menu)</label><input id="tk-novo-descricao" placeholder="ex: Clique aqui pra denunciar alguém."></div>
-      <label style="display:flex; align-items:center; gap:8px; margin-bottom:14px; color:var(--phosphor); font-size:0.85rem;">
-        <input type="checkbox" id="tk-novo-ia" style="width:auto;"> Usa resposta automática (base de conhecimento por IA)
-      </label>
-      <button class="botao botao-primario" id="tk-adicionar">Adicionar categoria</button>
-    `;
-    renderListaTipos();
-    document.getElementById("tk-painel-salvar").onclick = salvarPainel;
-    document.getElementById("tk-adicionar").onclick = adicionarTipo;
-  }
-
-  function renderListaTipos() {
-    const lista = document.getElementById("tk-lista-tipos");
-    lista.innerHTML = tipos.map((t) => `
-      <div class="lista-item">
-        <span class="info">${escaparHtml(t.emoji || "🎫")} <strong>${escaparHtml(t.label)}</strong> (<code>${escaparHtml(t.valor)}</code>)${t.usa_ia ? " — usa IA" : ""}<br><span style="color:var(--steel)">${escaparHtml(t.descricao)}</span></span>
-        <button data-valor="${escaparHtml(t.valor)}">remover</button>
-      </div>
-    `).join("");
-    lista.querySelectorAll("button").forEach((btn) => {
-      btn.onclick = async () => {
-        tipos = tipos.filter((t) => t.valor !== btn.dataset.valor);
-        await salvarTipos();
-        renderListaTipos();
-      };
-    });
-  }
-
-  async function salvarTipos() {
-    try {
-      await api("/api/ticket-tipos-save", {
-        method: "POST",
-        body: JSON.stringify({
-          guildId: servidorAtual,
-          tipos
-        })
-      });
-
-      mostrarAviso(
-        "aba-tickets",
-        "Categorias atualizadas. Rode /ticket-painel de novo pra publicar.",
-        "sucesso"
-      );
-    } catch (e) {
-      mostrarAviso("aba-tickets", e.message, "erro");
-    }
-  }
-
-  async function adicionarTipo() {
-    const label =
-      document.getElementById("tk-novo-label").value.trim();
-
-    const emoji =
-      document.getElementById("tk-novo-emoji").value.trim();
-
-    const descricao =
-      document.getElementById("tk-novo-descricao").value.trim();
-
-    const usaIa =
-      document.getElementById("tk-novo-ia").checked;
-
-    if (!label || !descricao) {
-      return mostrarAviso(
-        "aba-tickets",
-        "Preenche nome e descrição.",
-        "erro"
-      );
-    }
-
-    const valor = slugificar(label);
-
-    tipos = tipos.filter(
-      (t) => t.valor !== valor
-    );
-
-    tipos.push({
-      valor,
-      label,
-      emoji: emoji || "🎫",
-      descricao,
-      usa_ia: usaIa
-    });
-
-    await salvarTipos();
-    render();
-  }
-
-  async function salvarPainel() {
-    try {
-      const r = await api(
-        "/api/config-save",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            guildId: servidorAtual,
-            ticket_painel_titulo:
-              document.getElementById(
-                "tk-painel-titulo"
-              ).value,
-
-            ticket_painel_descricao:
-              document.getElementById(
-                "tk-painel-descricao"
-              ).value,
-
-            ticket_painel_banner_url:
-              document.getElementById(
-                "tk-painel-banner"
-              ).value,
-          })
-        }
-      );
-
-      config.ticket_painel_titulo =
-        r.config.ticket_painel_titulo;
-
-      config.ticket_painel_descricao =
-        r.config.ticket_painel_descricao;
-
-      config.ticket_painel_banner_url =
-        r.config.ticket_painel_banner_url;
+        config.ticket_painel_banner_url =
+          r.config
+            .ticket_painel_banner_url;
+      }
 
       mostrarAviso(
         "aba-tickets",
@@ -1540,7 +1423,7 @@ async function renderizarTickets(d) {
   render();
 }
 
-// ---------------- Cargo Automático ----------------
+// ---------------- Cargo Automático ---------------- ----------------
 function renderizarAutocargo(d) {
   const {
     canais,
