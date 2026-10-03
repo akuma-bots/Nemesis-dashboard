@@ -967,7 +967,7 @@ function renderizarModeracao(d) {
                       </strong>
 
                       —
-                      <@${a.userId}>
+                      <code>${escaparHtml(a.userId)}</code>
 
                       ${
                         a.motivo
@@ -1423,7 +1423,7 @@ async function renderizarTickets(d) {
   render();
 }
 
-// ---------------- Cargo Automático ---------------- ----------------
+// ---------------- Cargo Automático ----------------
 function renderizarAutocargo(d) {
   const {
     canais,
@@ -2161,7 +2161,7 @@ function renderizarPatentes(d) {
                     #${i + 1}
                   </span>
 
-                  <@${r.discordId || r.userId}>
+                  <code>${escaparHtml(r.discordId || r.userId)}</code>
 
                   —
                   ${r.vitorias}
@@ -2213,7 +2213,7 @@ function renderizarPatentes(d) {
                   p.cargo_id
                     ? `
                       (cargo:
-                      <@&${p.cargo_id}>)
+                      <code>${escaparHtml(p.cargo_id)}</code>)
                     `
                     : ""
                 }
@@ -2370,11 +2370,11 @@ function renderizarDenuncias(d) {
                 </strong>
 
                 —
-                <@${den.denunciado_id}>
+                <code>${escaparHtml(den.denunciado_id)}</code>
 
                 denunciado por
 
-                <@${den.denunciante_id}>
+                <code>${escaparHtml(den.denunciante_id)}</code>
 
                 <br>
 
@@ -2965,7 +2965,7 @@ function renderizarRoblox(d) {
                     )}
 
                     →
-                    <@&${cargoId}>
+                    <code>${escaparHtml(cargoId)}</code>
                   </span>
 
                   <button
