@@ -20,74 +20,121 @@ const GUILD_ID_NEMESIS = "1543381737961160910";
  * - usuário precisa estar autenticado;
  * - usuário precisa gerenciar o servidor da NÊMESIS.
  *
- * Uso:
- *
- * GET /.netlify/functions/bot-dados-get?arquivo=competitivo.json
- *
  * ============================================================
  */
 
 const ARQUIVOS_PERMITIDOS = new Set([
-  // Configuração
+  // ==========================================================
+  // CONFIGURAÇÃO
+  // ==========================================================
+
   "guild_configs.json",
 
-  // Pontuação / perfis
+  // ==========================================================
+  // PERFIS / PONTUAÇÃO
+  // ==========================================================
+
   "competitivo.json",
   "perfis.json",
   "patentes_config.json",
 
-  // Missões
+  // ==========================================================
+  // MISSÕES
+  // ==========================================================
+
   "missoes.json",
 
-  // Revisões
+  // ==========================================================
+  // REVISÕES
+  // ==========================================================
+
   "revisoes.json",
 
-  // Competitivo
+  // ==========================================================
+  // COMPETITIVO
+  // ==========================================================
+
   "desafios.json",
   "lutas.json",
 
-  // Recordes
+  // ==========================================================
+  // RECORDES
+  // ==========================================================
+
   "recordes.json",
 
-  // Eventos
+  // ==========================================================
+  // EVENTOS
+  // ==========================================================
+
   "eventos.json",
   "sorteios.json",
   "guerras.json",
   "temporadas.json",
 
-  // Comunidade
-  "parcerias.json",
-  "formularios.json",
+  // ==========================================================
+  // COMUNIDADE
+  // ==========================================================
 
-  // Moderação
+  "parcerias.json",
+
+  // ==========================================================
+  // FORMULÁRIOS
+  // ==========================================================
+
+  "formularios.json",
+  "formularios_respostas.json",
+
+  // ==========================================================
+  // MODERAÇÃO
+  // ==========================================================
+
   "punicoes.json",
 
-  // Tickets
+  // ==========================================================
+  // TICKETS
+  // ==========================================================
+
   "tickets.json",
 
-  // Sistemas automáticos
+  // ==========================================================
+  // SISTEMAS AUTOMÁTICOS
+  // ==========================================================
+
   "contadores.json",
 ]);
+
 
 function resposta(statusCode, dados) {
   return {
     statusCode,
+
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
     },
+
     body: JSON.stringify(dados),
   };
 }
 
+
 exports.handler = async (event) => {
   try {
+
+    // ========================================================
+    // MÉTODO
+    // ========================================================
+
     if (event.httpMethod !== "GET") {
+
       return resposta(405, {
         ok: false,
         erro: "Método não permitido.",
       });
+
     }
+
 
     // ========================================================
     // AUTENTICAÇÃO
@@ -96,11 +143,14 @@ exports.handler = async (event) => {
     const sessao = lerSessao(event);
 
     if (!sessao) {
+
       return resposta(401, {
         ok: false,
         erro: "Você precisa estar autenticado.",
       });
+
     }
+
 
     // ========================================================
     // AUTORIZAÇÃO
@@ -112,12 +162,15 @@ exports.handler = async (event) => {
     );
 
     if (!gerencia) {
+
       return resposta(403, {
         ok: false,
         erro:
           "Você não possui permissão para gerenciar o servidor da NÊMESIS.",
       });
+
     }
+
 
     // ========================================================
     // ARQUIVO SOLICITADO
@@ -127,22 +180,40 @@ exports.handler = async (event) => {
       event.queryStringParameters?.arquivo || ""
     ).trim();
 
+
     if (!arquivo) {
+
       return resposta(400, {
         ok: false,
         erro: "Informe o arquivo que deseja consultar.",
+
         exemplo:
-          "/.netlify/functions/bot-dados-get?arquivo=competitivo.json",
+          "/.netlify/functions/bot-dados-get?arquivo=formularios_respostas.json",
+
+        arquivos:
+          [...ARQUIVOS_PERMITIDOS],
       });
+
     }
 
+
+    // ========================================================
+    // VALIDAÇÃO
+    // ========================================================
+
     if (!ARQUIVOS_PERMITIDOS.has(arquivo)) {
+
       return resposta(400, {
         ok: false,
-        erro: "Esse arquivo não está disponível para consulta.",
-        arquivos: [...ARQUIVOS_PERMITIDOS],
+        erro:
+          "Esse arquivo não está disponível para consulta.",
+
+        arquivos:
+          [...ARQUIVOS_PERMITIDOS],
       });
+
     }
+
 
     // ========================================================
     // UPSTASH
@@ -153,18 +224,24 @@ exports.handler = async (event) => {
       {}
     );
 
+
     // ========================================================
     // RESPOSTA
     // ========================================================
 
     return resposta(200, {
       ok: true,
-      guildId: GUILD_ID_NEMESIS,
+
+      guildId:
+        GUILD_ID_NEMESIS,
+
       arquivo,
+
       dados,
     });
 
   } catch (erro) {
+
     console.error(
       "[BOT-DADOS-GET]",
       erro
@@ -172,11 +249,15 @@ exports.handler = async (event) => {
 
     return resposta(500, {
       ok: false,
-      erro: "Erro interno ao consultar os dados da NÊMESIS.",
+
+      erro:
+        "Erro interno ao consultar os dados da NÊMESIS.",
+
       detalhe:
         process.env.NODE_ENV === "development"
           ? erro.message
           : undefined,
     });
+
   }
 };
