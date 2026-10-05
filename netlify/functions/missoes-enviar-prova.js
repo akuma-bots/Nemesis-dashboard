@@ -1,273 +1,353 @@
-const {
-  lerSessao,
-} = require("./lib/sessao");
-
-const {
-  buscarUsuario,
-} = require("./lib/discord");
-
-const {
-  carregarBlob,
-  salvarBlob,
-} = require("./lib/upstash");
-
+const { carregarBlob, salvarBlob } = require("./lib/upstash");
 const {
   PADRAO,
   comPadrao,
+  obterGuild,
 } = require("./lib/missoes-padrao");
 
-const LIMITE_BASE64 =
-  2_100_000;
+const {
+  autenticar,
+} = require("./lib/auth");
+
+const GUILD_ID = "1543381737961160910";
 
 exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        erro: "Method Not Allowed",
+      }),
+    };
+  }
+
   try {
-    if (event.httpMethod !== "POST") {
-      return {
-        statusCode: 405,
-        body: JSON.stringify({
-          erro:
-            "Método não permitido.",
-        }),
-      };
-    }
+    const usuario = await autenticar(event);
 
-    const sessao =
-      lerSessao(event);
-
-    if (!sessao) {
+    if (!usuario) {
       return {
         statusCode: 401,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          erro:
-            "Você precisa estar autenticado.",
+          erro: "Não autenticado.",
         }),
       };
     }
 
-    const corpo =
-      JSON.parse(
+    let corpo;
+
+    try {
+      corpo = JSON.parse(
         event.body || "{}"
       );
-
-    const missaoId =
-      String(
-        corpo.missaoId || ""
-      ).trim();
-
-    const imagemBase64 =
-      corpo.imagemBase64;
-
-    if (
-      !missaoId ||
-      !imagemBase64
-    ) {
+    } catch {
       return {
         statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          erro:
-            "missaoId e imagemBase64 são obrigatórios.",
+          erro: "JSON inválido.",
         }),
       };
     }
 
-    if (
-      typeof imagemBase64 !==
-      "string"
-    ) {
+    const missaoId = String(
+      corpo.missaoId || ""
+    ).trim();
+
+    const imagemBase64 = String(
+      corpo.imagemBase64 || ""
+    ).trim();
+
+    if (!missaoId) {
       return {
         statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          erro:
-            "A imagem precisa ser enviada em base64.",
+          erro: "missaoId é obrigatório.",
         }),
       };
     }
 
-    if (
-      imagemBase64.length >
-      LIMITE_BASE64
-    ) {
+    if (!imagemBase64) {
       return {
         statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          erro:
-            "Imagem muito grande. Envie um print de até 1.5MB.",
-        }),
-      };
-    }
-
-    const usuario =
-      await buscarUsuario(
-        sessao.access_token
-      );
-
-    if (!usuario?.id) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({
-          erro:
-            "Não foi possível identificar sua conta Discord.",
-        }),
-      };
-    }
-
-    const atual =
-      comPadrao(
-        await carregarBlob(
-          "missoes.json",
-          PADRAO
-        )
-      );
-
-    const missao =
-      atual.missoes.find(
-        (item) =>
-          item.id ===
-          missaoId
-      );
-
-    if (
-      !missao ||
-      !missao.ativa
-    ) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({
-          erro:
-            "Essa missão não existe ou não está mais ativa.",
+          erro: "A imagem da prova é obrigatória.",
         }),
       };
     }
 
     /*
-     * Evita que o mesmo usuário mantenha
-     * várias provas pendentes para a mesma missão.
+     * Aceita somente imagens em Base64.
      */
-    const jaPendente =
-      atual.submissoes.some(
-        (submissao) =>
-          submissao.missaoId ===
-            missaoId &&
-          String(
-            submissao.discordId
-          ) ===
-            String(usuario.id) &&
-          submissao.status ===
-            "pendente"
-      );
-
-    if (jaPendente) {
+    if (
+      !imagemBase64.startsWith(
+        "data:image/"
+      )
+    ) {
       return {
-        statusCode: 409,
+        statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           erro:
-            "Você já possui uma prova pendente para esta missão.",
+            "A prova precisa ser uma imagem válida.",
         }),
       };
     }
 
-    const submissao = {
-      id:
-        `sub_${Date.now()}_${Math.random()
-          .toString(36)
-          .slice(2, 8)}`,
+    /*
+     * Limite de segurança para evitar
+     * armazenar payloads gigantes no Redis.
+     */
+    if (imagemBase64.length > 2_100_000) {
+      return {
+        statusCode: 413,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          erro:
+            "A imagem da prova é muito grande.",
+        }),
+      };
+    }
 
-      missaoId:
-        missao.id,
+    /*
+     * Carrega o armazenamento compartilhado.
+     */
+    const bruto = await carregarBlob(
+      "missoes.json",
+      PADRAO
+    );
+
+    const atual = comPadrao(bruto);
+
+    const resultado = obterGuild(
+      atual,
+      GUILD_ID,
+      true
+    );
+
+    const conteudo = resultado.conteudo;
+    const guild = resultado.guild;
+
+    guild.missoes = Array.isArray(
+      guild.missoes
+    )
+      ? guild.missoes
+      : [];
+
+    guild.submissoes = Array.isArray(
+      guild.submissoes
+    )
+      ? guild.submissoes
+      : [];
+
+    /*
+     * Localiza a missão.
+     */
+    const missao = guild.missoes.find(
+      (item) =>
+        String(item.id) ===
+        missaoId
+    );
+
+    if (!missao) {
+      return {
+        statusCode: 404,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          erro: "Missão não encontrada.",
+        }),
+      };
+    }
+
+    if (missao.ativa === false) {
+      return {
+        statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          erro:
+            "Esta missão não está mais ativa.",
+        }),
+      };
+    }
+
+    const discordId = String(
+      usuario.discordId ||
+        usuario.discord_id ||
+        usuario.id ||
+        ""
+    ).trim();
+
+    const nome =
+      usuario.username ||
+      usuario.nome ||
+      usuario.globalName ||
+      usuario.global_name ||
+      "Jogador";
+
+    if (!discordId) {
+      return {
+        statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          erro:
+            "Não foi possível identificar seu Discord.",
+        }),
+      };
+    }
+
+    /*
+     * Impede múltiplas provas pendentes
+     * para a mesma missão.
+     */
+    const duplicada = guild.submissoes.find(
+      (submissao) =>
+        String(
+          submissao.discordId
+        ) === discordId &&
+        String(
+          submissao.missaoId
+        ) === missaoId &&
+        submissao.status === "pendente"
+    );
+
+    if (duplicada) {
+      return {
+        statusCode: 409,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          erro:
+            "Você já possui uma prova pendente para esta missão.",
+          submissao: duplicada,
+        }),
+      };
+    }
+
+    const recompensa = Number(
+      missao.recompensa_xp ??
+        missao.pontos ??
+        0
+    );
+
+    const agora = Date.now();
+
+    const submissao = {
+      id: `sub_${agora}_${Math.random()
+        .toString(36)
+        .slice(2, 8)}`,
+
+      missaoId,
 
       missaoTitulo:
-        missao.titulo,
+        missao.titulo || "",
 
       missaoTipo:
-        missao.tipo,
+        missao.tipo || null,
 
       missaoPontos:
-        Number(
-          missao.recompensa_xp || 0
-        ),
+        Number.isFinite(recompensa)
+          ? recompensa
+          : 0,
 
       recompensa_xp:
-        Number(
-          missao.recompensa_xp || 0
-        ),
+        Number.isFinite(recompensa)
+          ? recompensa
+          : 0,
 
-      discordId:
-        String(usuario.id),
+      discordId,
 
-      nome:
-        usuario.username ||
-        usuario.global_name ||
-        String(usuario.id),
+      nome,
 
       imagemBase64,
 
-      status:
-        "pendente",
+      status: "pendente",
 
-      criadoEm:
-        Date.now(),
+      criadoEm: agora,
     };
 
-    atual.submissoes.push(
+    guild.submissoes.push(
       submissao
     );
 
+    conteudo.guilds[GUILD_ID] =
+      guild;
+
     await salvarBlob(
       "missoes.json",
-      atual
+      conteudo
     );
 
     return {
       statusCode: 200,
-
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
       },
-
       body: JSON.stringify({
-        ok: true,
+        sucesso: true,
+
+        guildId: GUILD_ID,
 
         submissao: {
-          id:
-            submissao.id,
-
+          id: submissao.id,
           missaoId:
             submissao.missaoId,
-
           missaoTitulo:
             submissao.missaoTitulo,
-
           missaoTipo:
             submissao.missaoTipo,
-
+          recompensa_xp:
+            submissao.recompensa_xp,
+          discordId:
+            submissao.discordId,
+          nome:
+            submissao.nome,
           status:
             submissao.status,
-
           criadoEm:
             submissao.criadoEm,
         },
       }),
     };
-
   } catch (erro) {
     console.error(
-      "[MISSOES-ENVIAR-PROVA]",
+      "Erro em missoes-enviar-prova:",
       erro
     );
 
     return {
       statusCode: 500,
-
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
       },
-
       body: JSON.stringify({
-        ok: false,
         erro:
-          "Não foi possível enviar a prova.",
+          "Erro interno ao enviar a prova.",
+        detalhe: erro.message,
       }),
     };
   }
