@@ -16,8 +16,7 @@ const TIPOS = {
 };
 
 const PADRAO = {
-  missoes: [],
-  submissoes: [],
+  guilds: {},
 };
 
 function normalizarTipo(tipo) {
@@ -25,11 +24,6 @@ function normalizarTipo(tipo) {
     .trim()
     .toLowerCase();
 
-  /*
-   * Compatibilidade com possíveis dados antigos.
-   *
-   * NÃO criamos mais sistemas separados para PvP/PvE.
-   */
   if (
     valor === "missao" ||
     valor === "missões" ||
@@ -65,14 +59,8 @@ function normalizarMissao(missao) {
     return null;
   }
 
-  const tipo = normalizarTipo(
-    missao.tipo
-  );
+  const tipo = normalizarTipo(missao.tipo);
 
-  /*
-   * Sistemas antigos de PvP/PvE não entram
-   * no novo sistema oficial.
-   */
   if (!tipo) {
     return null;
   }
@@ -90,31 +78,25 @@ function normalizarMissao(missao) {
 
     id: String(
       missao.id ||
-      `missao_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2, 8)}`
+        `missao_${Date.now()}_${Math.random()
+          .toString(36)
+          .slice(2, 8)}`
     ),
 
     tipo,
 
     titulo: String(
       missao.titulo ||
-      missao.nome ||
-      "Atividade sem título"
+        missao.nome ||
+        "Atividade sem título"
     ),
 
     descricao: String(
-      missao.descricao ||
-      ""
+      missao.descricao || ""
     ),
 
     recompensa_xp: recompensa,
 
-    /*
-     * O Dashboard antigo usava "pontos".
-     * Mantemos o campo para compatibilidade,
-     * mas o valor oficial é recompensa_xp.
-     */
     pontos: recompensa,
 
     criado_por:
@@ -149,21 +131,21 @@ function normalizarSubmissao(submissao) {
 
     id: String(
       submissao.id ||
-      `sub_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2, 8)}`
+        `sub_${Date.now()}_${Math.random()
+          .toString(36)
+          .slice(2, 8)}`
     ),
 
     missaoId: String(
       submissao.missaoId ||
-      submissao.missao_id ||
-      ""
+        submissao.missao_id ||
+        ""
     ),
 
     discordId: String(
       submissao.discordId ||
-      submissao.userId ||
-      ""
+        submissao.userId ||
+        ""
     ),
 
     nome:
@@ -186,11 +168,11 @@ function normalizarSubmissao(submissao) {
   };
 }
 
-function comPadrao(conteudo) {
+function normalizarGuild(guild) {
   const origem =
-    conteudo &&
-    typeof conteudo === "object"
-      ? conteudo
+    guild &&
+    typeof guild === "object"
+      ? guild
       : {};
 
   return {
@@ -214,21 +196,159 @@ function comPadrao(conteudo) {
   };
 }
 
+function comPadrao(conteudo) {
+  const origem =
+    conteudo &&
+    typeof conteudo === "object"
+      ? conteudo
+      : {};
+
+  /*
+   * Novo formato compartilhado:
+
+   {
+     "guilds": {
+       "ID_DO_SERVIDOR": {
+         "missoes": [],
+         "submissoes": []
+       }
+     }
+   }
+   */
+
+  if (
+    origem.guilds &&
+    typeof origem.guilds === "object" &&
+    !Array.isArray(origem.guilds)
+  ) {
+    const guilds = {};
+
+    for (const [guildId, guild] of Object.entries(
+      origem.guilds
+    )) {
+      guilds[String(guildId)] =
+        normalizarGuild(guild);
+    }
+
+    return {
+      ...origem,
+      guilds,
+    };
+  }
+
+  /*
+   * Compatibilidade com o formato antigo
+   * utilizado pelo Dashboard.
+   */
+  if (
+    Array.isArray(origem.missoes) ||
+    Array.isArray(origem.submissoes)
+  ) {
+    return {
+      guilds: {},
+      _legado: {
+        missoes: Array.isArray(
+          origem.missoes
+        )
+          ? origem.missoes
+              .map(normalizarMissao)
+              .filter(Boolean)
+          : [],
+
+        submissoes: Array.isArray(
+          origem.submissoes
+        )
+          ? origem.submissoes
+              .map(normalizarSubmissao)
+              .filter(Boolean)
+          : [],
+      },
+    };
+  }
+
+  /*
+   * Compatibilidade com o formato antigo
+   * do Bot:
+   *
+   * {
+   *   "guildId": [...]
+   * }
+   */
+  const guilds = {};
+
+  for (const [chave, valor] of Object.entries(
+    origem
+  )) {
+    if (!Array.isArray(valor)) {
+      continue;
+    }
+
+    guilds[String(chave)] = {
+      missoes: valor
+        .map(normalizarMissao)
+        .filter(Boolean),
+
+      submissoes: [],
+    };
+  }
+
+  return {
+    guilds,
+  };
+}
+
+function obterGuild(
+  conteudo,
+  guildId,
+  criar = true
+) {
+  const normalizado = comPadrao(
+    conteudo
+  );
+
+  const chave = String(guildId);
+
+  if (
+    !normalizado.guilds[chave] &&
+    criar
+  ) {
+    normalizado.guilds[chave] = {
+      missoes: [],
+      submissoes: [],
+    };
+  }
+
+  return {
+    conteudo: normalizado,
+    guild:
+      normalizado.guilds[chave] ||
+      null,
+  };
+}
+
 function nomeTipo(tipo) {
-  return TIPOS[tipo]?.nome || "Desconhecido";
+  return (
+    TIPOS[tipo]?.nome ||
+    "Desconhecido"
+  );
 }
 
 function iconeTipo(tipo) {
-  return TIPOS[tipo]?.icone || "•";
+  return (
+    TIPOS[tipo]?.icone ||
+    "•"
+  );
 }
 
 module.exports = {
   TIPOS,
   PADRAO,
   comPadrao,
+  obterGuild,
   normalizarTipo,
   normalizarMissao,
   normalizarSubmissao,
+  normalizarGuild,
   nomeTipo,
   iconeTipo,
 };
