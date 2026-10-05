@@ -1,135 +1,151 @@
-const {
-  lerSessao,
-} = require("./lib/sessao");
-
-const {
-  usuarioGerenciaServidor,
-} = require("./lib/discord");
-
-const {
-  carregarBlob,
-} = require("./lib/upstash");
-
+const { carregarBlob } = require("./lib/upstash");
 const {
   PADRAO,
   comPadrao,
-  TIPOS,
+  obterGuild,
 } = require("./lib/missoes-padrao");
 
-const GUILD_ID_NEMESIS =
-  "1543381737961160910";
+const {
+  autenticar,
+  eGerente,
+  respostaNaoAutorizado,
+} = require("./lib/auth");
+
+const GUILD_ID = "1543381737961160910";
 
 exports.handler = async (event) => {
+  if (event.httpMethod !== "GET") {
+    return {
+      statusCode: 405,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        erro: "Method Not Allowed",
+      }),
+    };
+  }
+
   try {
-    if (event.httpMethod !== "GET") {
-      return {
-        statusCode: 405,
-        body: JSON.stringify({
-          erro: "Método não permitido.",
-        }),
-      };
+    const usuario = await autenticar(event);
+
+    if (!usuario || !eGerente(usuario)) {
+      return respostaNaoAutorizado();
     }
 
-    const sessao =
-      lerSessao(event);
+    const bruto = await carregarBlob(
+      "missoes.json",
+      PADRAO
+    );
 
-    if (!sessao) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({
-          erro:
-            "Você precisa estar autenticado.",
-        }),
-      };
-    }
+    const atual = comPadrao(bruto);
 
-    const gerencia =
-      await usuarioGerenciaServidor(
-        sessao.access_token,
-        GUILD_ID_NEMESIS
-      );
+    const resultado = obterGuild(
+      atual,
+      GUILD_ID,
+      false
+    );
 
-    if (!gerencia) {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({
-          erro:
-            "Você não gerencia o servidor da NÊMESIS.",
-        }),
-      };
-    }
+    const guild = resultado.guild || {
+      missoes: [],
+      submissoes: [],
+    };
 
-    const dados =
-      comPadrao(
-        await carregarBlob(
-          "missoes.json",
-          PADRAO
-        )
-      );
+    const missoes = Array.isArray(
+      guild.missoes
+    )
+      ? guild.missoes
+      : [];
+
+    const submissoes = Array.isArray(
+      guild.submissoes
+    )
+      ? guild.submissoes
+      : [];
+
+    const ativas = missoes.filter(
+      (missao) =>
+        missao.ativa !== false
+    );
+
+    const pendentes = submissoes.filter(
+      (submissao) =>
+        submissao.status === "pendente"
+    );
+
+    const aprovadas = submissoes.filter(
+      (submissao) =>
+        submissao.status === "aprovada"
+    );
+
+    const recusadas = submissoes.filter(
+      (submissao) =>
+        submissao.status === "recusada"
+    );
+
+    const porTipo = {
+      missao: missoes.filter(
+        (missao) =>
+          missao.tipo === "missao"
+      ).length,
+
+      contribuicao: missoes.filter(
+        (missao) =>
+          missao.tipo === "contribuicao"
+      ).length,
+
+      especial: missoes.filter(
+        (missao) =>
+          missao.tipo === "especial"
+      ).length,
+    };
 
     return {
       statusCode: 200,
-
       headers: {
-        "Content-Type":
-          "application/json",
-
-        "Cache-Control":
-          "no-store",
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
       },
-
       body: JSON.stringify({
-        ok: true,
+        guildId: GUILD_ID,
 
-        guildId:
-          GUILD_ID_NEMESIS,
+        tipos: {
+          missao: "Missões",
+          contribuicao: "Contribuições",
+          especial: "Missões Especiais",
+        },
 
-        tipos: TIPOS,
+        missoes,
+        submissoes,
 
-        missoes:
-          dados.missoes,
+        totais: {
+          missoes: missoes.length,
+          ativas: ativas.length,
 
-        submissoes:
-          dados.submissoes,
+          submissoes: submissoes.length,
+          pendentes: pendentes.length,
+          aprovadas: aprovadas.length,
+          recusadas: recusadas.length,
 
-        totalMissoes:
-          dados.missoes.length,
-
-        totalAtivas:
-          dados.missoes.filter(
-            (m) => m.ativa
-          ).length,
-
-        totalSubmissoes:
-          dados.submissoes.length,
-
-        pendentes:
-          dados.submissoes.filter(
-            (s) =>
-              s.status ===
-              "pendente"
-          ).length,
+          porTipo,
+        },
       }),
     };
-
   } catch (erro) {
     console.error(
-      "[MISSOES-ADMIN-GET]",
+      "Erro em missoes-admin-get:",
       erro
     );
 
     return {
       statusCode: 500,
-
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
       },
-
       body: JSON.stringify({
-        ok: false,
         erro:
-          "Erro ao carregar os dados das missões.",
+          "Erro interno ao carregar os dados administrativos das missões.",
+        detalhe: erro.message,
       }),
     };
   }
