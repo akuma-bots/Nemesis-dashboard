@@ -1,186 +1,176 @@
-const {
-  lerSessao,
-} = require("./lib/sessao");
-
-const {
-  usuarioGerenciaServidor,
-} = require("./lib/discord");
-
-const {
-  carregarBlob,
-  salvarBlob,
-} = require("./lib/upstash");
-
+const { carregarBlob, salvarBlob } = require("./lib/upstash");
 const {
   PADRAO,
   comPadrao,
+  obterGuild,
   normalizarTipo,
   normalizarMissao,
 } = require("./lib/missoes-padrao");
 
-const GUILD_ID_NEMESIS =
-  "1543381737961160910";
+const {
+  autenticar,
+  eGerente,
+  respostaNaoAutorizado,
+} = require("./lib/auth");
+
+const GUILD_ID = "1543381737961160910";
 
 exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        erro: "Method Not Allowed",
+      }),
+    };
+  }
+
   try {
-    if (event.httpMethod !== "POST") {
-      return {
-        statusCode: 405,
-        body: JSON.stringify({
-          erro: "Método não permitido.",
-        }),
-      };
+    const usuario = await autenticar(event);
+
+    if (!usuario || !eGerente(usuario)) {
+      return respostaNaoAutorizado();
     }
 
-    const sessao =
-      lerSessao(event);
+    let corpo;
 
-    if (!sessao) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({
-          erro:
-            "Você precisa estar autenticado.",
-        }),
-      };
-    }
-
-    const gerencia =
-      await usuarioGerenciaServidor(
-        sessao.access_token,
-        GUILD_ID_NEMESIS
-      );
-
-    if (!gerencia) {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({
-          erro:
-            "Você não gerencia o servidor da NÊMESIS.",
-        }),
-      };
-    }
-
-    const corpo =
-      JSON.parse(
-        event.body || "{}"
-      );
-
-    if (
-      !Array.isArray(
-        corpo.missoes
-      )
-    ) {
+    try {
+      corpo = JSON.parse(event.body || "{}");
+    } catch {
       return {
         statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          erro:
-            "missoes precisa ser uma lista.",
+          erro: "JSON inválido.",
         }),
       };
     }
 
-    const missoes = [];
+    if (!Array.isArray(corpo.missoes)) {
+      return {
+        statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          erro: "O campo missoes deve ser uma lista.",
+        }),
+      };
+    }
 
-    for (
-      const item of corpo.missoes
-    ) {
-      const tipo =
-        normalizarTipo(
-          item?.tipo
-        );
+    const missoesNormalizadas = [];
+
+    for (const item of corpo.missoes) {
+      const tipo = normalizarTipo(item?.tipo);
 
       if (!tipo) {
         return {
           statusCode: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            erro:
-              "Tipo de missão inválido.",
-            permitido: [
-              "missao",
-              "contribuicao",
-              "especial",
-            ],
+            erro: `Tipo de missão inválido: ${
+              item?.tipo ?? "não informado"
+            }.`,
           }),
         };
       }
 
-      const missao =
-        normalizarMissao({
-          ...item,
-          tipo,
-        });
+      const missao = normalizarMissao({
+        ...item,
+        tipo,
+      });
 
       if (!missao) {
         return {
           statusCode: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            erro:
-              "Uma das missões possui dados inválidos.",
+            erro: "Uma das missões enviadas é inválida.",
           }),
         };
       }
 
-      missoes.push(
-        missao
-      );
+      missoesNormalizadas.push(missao);
     }
 
-    const atual =
-      comPadrao(
-        await carregarBlob(
-          "missoes.json",
-          PADRAO
-        )
-      );
+    /*
+     * Carrega o armazenamento compartilhado.
+     */
+    const bruto = await carregarBlob(
+      "missoes.json",
+      PADRAO
+    );
+
+    const atual = comPadrao(bruto);
 
     /*
-     * O Dashboard altera somente o catálogo.
+     * Obtém somente os dados da NÊMESIS.
+     */
+    const resultado = obterGuild(
+      atual,
+      GUILD_ID,
+      true
+    );
+
+    const conteudo = resultado.conteudo;
+    const guild = resultado.guild;
+
+    /*
+     * O catálogo pertence ao servidor.
+     *
      * As submissões existentes são preservadas.
      */
-    const novo = {
-      ...atual,
-      missoes,
-    };
+    guild.missoes = missoesNormalizadas;
+
+    guild.submissoes = Array.isArray(
+      guild.submissoes
+    )
+      ? guild.submissoes
+      : [];
+
+    conteudo.guilds[GUILD_ID] = guild;
 
     await salvarBlob(
       "missoes.json",
-      novo
+      conteudo
     );
 
     return {
       statusCode: 200,
-
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
       },
-
       body: JSON.stringify({
-        ok: true,
-        missoes:
-          novo.missoes,
+        sucesso: true,
+        guildId: GUILD_ID,
+        total: missoesNormalizadas.length,
+        missoes: missoesNormalizadas,
       }),
     };
-
   } catch (erro) {
     console.error(
-      "[MISSOES-CATALOGO-SAVE]",
+      "Erro em missoes-catalogo-save:",
       erro
     );
 
     return {
       statusCode: 500,
-
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
       },
-
       body: JSON.stringify({
-        ok: false,
-        erro:
-          "Não foi possível salvar as missões.",
+        erro: "Erro interno ao salvar o catálogo de missões.",
+        detalhe: erro.message,
       }),
     };
   }
