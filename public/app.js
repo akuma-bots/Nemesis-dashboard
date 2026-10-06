@@ -1620,6 +1620,7 @@ function renderizarAutocargo(d) {
 }
 
 // ---------------- Contadores ----------------
+
 function renderizarContadores(d) {
   const {
     cargos,
@@ -1819,6 +1820,7 @@ function renderizarContadores(d) {
 }
 
 // ---------------- Guerras ----------------
+
 function renderizarGuerras(d) {
   const {
     guerras,
@@ -2082,8 +2084,8 @@ function renderizarGuerras(d) {
     }
   };
 }
-
 // ---------------- Patentes & Ranking ----------------
+
 function renderizarPatentes(d) {
   const {
     patentes,
@@ -2314,6 +2316,7 @@ function renderizarPatentes(d) {
 }
 
 // ---------------- Denúncias ----------------
+
 function renderizarDenuncias(d) {
   const {
     denuncias
@@ -2475,7 +2478,9 @@ function renderizarDenuncias(d) {
     denuncias
   );
 }
+
 // ---------------- Parcerias ----------------
+
 function renderizarParcerias(d) {
   const el =
     document.getElementById(
@@ -2650,6 +2655,7 @@ function renderizarParcerias(d) {
 }
 
 // ---------------- Embeds ----------------
+
 function renderizarEmbeds(d) {
   const {
     canais
@@ -2858,8 +2864,8 @@ function renderizarEmbeds(d) {
     }
   };
 }
-
 // ---------------- Roblox ----------------
+
 function renderizarRoblox(d) {
   const {
     robloxGrupo,
@@ -3120,6 +3126,7 @@ function renderizarRoblox(d) {
 }
 
 // ---------------- Sorteios ----------------
+
 function renderizarSorteios(d) {
   const {
     canais,
@@ -3145,11 +3152,46 @@ function renderizarSorteios(d) {
     </div>
 
     <div class="campo">
+      <label>Texto do sorteio</label>
+
+      <textarea
+        id="so-texto"
+        rows="4"
+        placeholder="Escreva a mensagem principal do sorteio..."
+      ></textarea>
+    </div>
+
+    <div class="campo">
+      <label>Requisitos</label>
+
+      <textarea
+        id="so-requisitos"
+        rows="4"
+        placeholder="Ex.: Ser membro da NÊMESIS e seguir os requisitos..."
+      ></textarea>
+    </div>
+
+    <div class="campo">
       <label>Prêmio</label>
-      <input id="so-premio">
+
+      <input
+        id="so-premio"
+        placeholder="Ex.: Cargo especial"
+      >
+    </div>
+
+    <div class="campo">
+      <label>Banner</label>
+
+      <input
+        id="so-banner"
+        type="url"
+        placeholder="https://..."
+      >
     </div>
 
     <div class="linha-formulario">
+
       <div class="campo">
         <label>
           Duração (minutos)
@@ -3159,6 +3201,7 @@ function renderizarSorteios(d) {
           type="number"
           id="so-duracao"
           value="60"
+          min="1"
         >
       </div>
 
@@ -3171,8 +3214,10 @@ function renderizarSorteios(d) {
           type="number"
           id="so-vencedores"
           value="1"
+          min="1"
         >
       </div>
+
     </div>
 
     <button
@@ -3201,16 +3246,23 @@ function renderizarSorteios(d) {
             (s) => `
               <div class="lista-item">
                 <span class="info">
-                  ${escaparHtml(
-                    s.premio
-                  )}
+
+                  <strong>
+                    ${escaparHtml(
+                      s.premio
+                    )}
+                  </strong>
 
                   —
+
                   ${s.participantes.length}
-                  participante(s),
+                  participante(s)
+
+                  —
 
                   termina
                   <t:${s.fim}:R>
+
                 </span>
               </div>
             `
@@ -3226,10 +3278,45 @@ function renderizarSorteios(d) {
   document.getElementById(
     "so-criar"
   ).onclick = async () => {
+
     const canalId =
       document.getElementById(
         "so-canal"
       ).value;
+
+    const texto =
+      document.getElementById(
+        "so-texto"
+      ).value.trim();
+
+    const requisitos =
+      document.getElementById(
+        "so-requisitos"
+      ).value.trim();
+
+    const premio =
+      document.getElementById(
+        "so-premio"
+      ).value.trim();
+
+    const banner =
+      document.getElementById(
+        "so-banner"
+      ).value.trim();
+
+    const duracaoMinutos =
+      Number(
+        document.getElementById(
+          "so-duracao"
+        ).value
+      );
+
+    const vencedores =
+      Number(
+        document.getElementById(
+          "so-vencedores"
+        ).value
+      );
 
     if (!canalId) {
       return mostrarAviso(
@@ -3239,40 +3326,100 @@ function renderizarSorteios(d) {
       );
     }
 
+    if (!texto) {
+      return mostrarAviso(
+        "aba-sorteios",
+        "Informe o texto do sorteio.",
+        "erro"
+      );
+    }
+
+    if (!premio) {
+      return mostrarAviso(
+        "aba-sorteios",
+        "Informe o prêmio.",
+        "erro"
+      );
+    }
+
+    if (
+      !Number.isFinite(
+        duracaoMinutos
+      ) ||
+      duracaoMinutos < 1
+    ) {
+      return mostrarAviso(
+        "aba-sorteios",
+        "A duração deve ser de pelo menos 1 minuto.",
+        "erro"
+      );
+    }
+
+    if (
+      !Number.isFinite(
+        vencedores
+      ) ||
+      vencedores < 1
+    ) {
+      return mostrarAviso(
+        "aba-sorteios",
+        "Informe pelo menos 1 vencedor.",
+        "erro"
+      );
+    }
+
     try {
       await api(
         "/api/sorteio-criar",
         {
           method: "POST",
+
           body: JSON.stringify({
+
             guildId:
               servidorAtual,
 
             canalId,
 
-            premio:
-              document.getElementById(
-                "so-premio"
-              ).value,
+            texto,
 
-            duracaoMinutos:
-              document.getElementById(
-                "so-duracao"
-              ).value,
+            requisitos,
 
-            vencedores:
-              document.getElementById(
-                "so-vencedores"
-              ).value
+            premio,
+
+            banner:
+              banner || null,
+
+            duracaoMinutos,
+
+            vencedores
+
           })
         }
       );
 
       mostrarAviso(
         "aba-sorteios",
-        "Sorteio criado! O bot sorteia sozinho quando o tempo acabar.",
+        "Sorteio criado! O bot ficará responsável pela participação e pelo encerramento automático.",
         "sucesso"
       );
+
+      document.getElementById(
+        "so-texto"
+      ).value = "";
+
+      document.getElementById(
+        "so-requisitos"
+      ).value = "";
+
+      document.getElementById(
+        "so-premio"
+      ).value = "";
+
+      document.getElementById(
+        "so-banner"
+      ).value = "";
+
     } catch (e) {
       mostrarAviso(
         "aba-sorteios",
@@ -3284,6 +3431,7 @@ function renderizarSorteios(d) {
 }
 
 // ---------------- Backup ----------------
+
 function renderizarBackup(d) {
   const el =
     document.getElementById(
