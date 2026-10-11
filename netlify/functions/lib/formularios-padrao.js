@@ -86,7 +86,7 @@ function normalizarFormulario(formulario) {
         original.descricao_painel ||
           original.descricao ||
           ""
-      ).slice(0, 500),
+      ).slice(0, 4096),
 
     banner_url:
       String(
