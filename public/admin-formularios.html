@@ -82,12 +82,16 @@ async function iniciar() {
   if (r.status === 401) return mostrar('tela-login');
   if (r.status === 403) return mostrar('tela-negado');
   dados = await r.json();
-  dados.formularios.forEach(normalizar);
+  dados.formularios.forEach((f) => {
+    normalizar(f);
+    f.canalNotificacaoId = '1545835428530360401';
+  });
   desenharEditor(); desenharRespostas(); mostrar('tela-editor');
+  avisar('Todos os formulários foram configurados para enviar avisos ao canal 1545835428530360401. Clique em Salvar formulários para gravar a alteração.');
 }
 
 function novoForm() {
-  dados.formularios.push({ id: novoId('form'), titulo: 'Novo formulário', descricao: '', ativo: false, cargosNotificar: [], canalNotificacaoId: '', paginas: [{ titulo: 'Etapa 1', perguntas: [] }] });
+  dados.formularios.push({ id: novoId('form'), titulo: 'Novo formulário', descricao: '', ativo: false, cargosNotificar: [], canalNotificacaoId: '1545835428530360401', paginas: [{ titulo: 'Etapa 1', perguntas: [] }] });
   desenharEditor();
 }
 
@@ -103,7 +107,7 @@ function novoFormularioPadrao() {
     descricao: '⟡・ A NÊMESIS está recrutando novos integrantes para sua equipe administrativa. Procuramos pessoas responsáveis, maduras e comprometidas, dispostas a contribuir para a organização, o crescimento e o desenvolvimento da gangue.\n\n╭─────────────── ◈ ───────────────╮\n\n⚔️・| 𝐎 𝐐𝐔𝐄 𝐏𝐑𝐎𝐂𝐔𝐑𝐀𝐌𝐎𝐒\n➜ Responsabilidade, maturidade e postura;\n➜ Comunicação clara e respeitosa;\n➜ Atividade e participação consistente;\n➜ Capacidade de trabalhar em equipe;\n➜ Imparcialidade na resolução de conflitos;\n➜ Compromisso com as funções assumidas;\n➜ Respeito às regras, à hierarquia e às decisões administrativas;\n➜ Iniciativa para identificar problemas e propor soluções.\n\n╭─────────────── ◈ ───────────────╮\n\n⚔️・| 𝐒𝐎𝐁𝐑𝐄 𝐎 𝐑𝐄𝐂𝐑𝐔𝐓𝐀𝐌𝐄𝐍𝐓𝐎\nA seleção avaliará seu perfil, sua disponibilidade, sua experiência e sua capacidade de contribuir com a equipe. Experiência anterior pode ajudar, mas responsabilidade, honestidade e vontade de evoluir também serão consideradas.\n\n╭─────────────── ◈ ───────────────╮\n\n⚠️・| 𝐈𝐌𝐏𝐎𝐑𝐓𝐀𝐍𝐓𝐄\nResponda a todas as perguntas com atenção, sinceridade e informações completas. Inscrições incompletas, falsas ou feitas sem comprometimento poderão ser desconsideradas. O envio do formulário não garante aprovação. Os candidatos selecionados serão avaliados pela administração da NÊMESIS.\n\n╰─────────────── ◈ ───────────────╯\n\n⟡・ Se você está preparado para assumir responsabilidades, colaborar com a equipe e ajudar a fortalecer a NÊMESIS, envie sua candidatura pelo botão abaixo.',
     ativo: true,
     cargosNotificar: [],
-    canalNotificacaoId: '',
+    canalNotificacaoId: '1545835428530360401',
     paginas: [
       {
         titulo: 'Perfil do candidato',
@@ -144,7 +148,7 @@ function novoFormularioRecrutamento() {
     descricao: '⟡・ Faça parte da NÊMESIS.\nA NÊMESIS está em busca de novos membros para fortalecer sua estrutura, ampliar sua presença e construir uma equipe ativa, comprometida e competitiva.\n\n╭─────────────── ◈ ───────────────╮\n⚔️・| RECRUTAMENTO ABERTO\n➜ Buscamos jogadores ativos, responsáveis e dispostos a participar das atividades da NÊMESIS.\n➜ Valorizamos atividade, respeito, lealdade, comunicação e trabalho em equipe.\n➜ A entrada será avaliada de acordo com o perfil, a postura e o comprometimento de cada candidato.\n➜ Procuramos membros que desejam evoluir, participar de eventos, enfrentar desafios e contribuir para o crescimento da gangue.\n\n╭─────────────── ◈ ───────────────╮\n⚔️・| O QUE OFERECEMOS\n➜ Participação em eventos, desafios e atividades competitivas.\n➜ Oportunidades de evolução e reconhecimento dentro da estrutura.\n➜ Interação com outros jogadores e formação de equipes.\n➜ Sistemas de missões, contribuições, pontuação e rankings.\n➜ Um ambiente organizado, com objetivos, funções e oportunidades para membros dedicados.\n\n╭─────────────── ◈ ───────────────╮\n⚠️・| REQUISITOS\n➜ Respeitar os membros, a hierarquia e as regras da NÊMESIS.\n➜ Manter uma postura adequada e evitar conflitos desnecessários.\n➜ Demonstrar interesse em participar das atividades.\n➜ Preencher o formulário com informações verdadeiras.\n\n╭─────────────── ◈ ───────────────╮\n⚔️・| ANTES DE SE INSCREVER\nLeia as informações com atenção e responda às perguntas com sinceridade. O envio da candidatura não garante entrada automática. A administração poderá avaliar cada inscrição antes de confirmar a aprovação.\n\n╰─────────────── ◈ ───────────────╯\n\n⟡・ Está pronto para fazer parte da NÊMESIS? Clique em Preencher Formulário, responda às perguntas e aguarde a avaliação da equipe.',
     ativo: true,
     cargosNotificar: [],
-    canalNotificacaoId: '',
+    canalNotificacaoId: '1545835428530360401',
     paginas: [
       {
         titulo: 'Sobre você',
@@ -182,7 +186,7 @@ function novoFormularioParceria() {
     descricao: '⟡・ Este formulário é destinado a comunidades, organizações e projetos interessados em estabelecer uma parceria com a NÊMESIS.\n\n╭─────────────── ◈ ───────────────╮\n🤝・| 𝐎 𝐎𝐁𝐉𝐄𝐓𝐈𝐕𝐎\n╰─────────────── ◈ ───────────────╯\n\nAtravés deste formulário, sua comunidade poderá apresentar sua proposta de colaboração, possibilitando que ambas as partes conheçam seus objetivos e definam uma parceria de forma organizada.\n\n╭─────────────── ◈ ───────────────╮\n🤝・| 𝐏𝐑𝐎𝐏𝐎𝐒𝐓𝐀 𝐃𝐄 𝐂𝐎𝐋𝐀𝐁𝐎𝐑𝐀𝐂̧𝐀̃𝐎\n╰─────────────── ◈ ───────────────╯\n\nBuscamos estabelecer parcerias que proporcionem benefícios mútuos, incentivem a interação entre os membros e ampliem as oportunidades para ambas as organizações. As propostas podem envolver divulgação, integração entre comunidades, eventos conjuntos, iniciativas competitivas e outras formas de colaboração. As condições serão definidas entre os representantes, de acordo com os objetivos e as possibilidades de cada parte.\n\n╭─────────────── ◈ ───────────────╮\n🤝・| 𝐂𝐎𝐌𝐎 𝐅𝐔𝐍𝐂𝐈𝐎𝐍𝐀\n╰─────────────── ◈ ───────────────╯\n\n➜ Preencha todas as informações solicitadas com clareza.\n➜ Apresente os objetivos e os benefícios da parceria proposta.\n➜ Informe as formas de divulgação e colaboração disponíveis.\n➜ Aguarde a análise da equipe responsável pela NÊMESIS.\n➜ Caso a proposta seja aprovada, os representantes poderão alinhar os detalhes e as condições da parceria.\n\n╭─────────────── ◈ ───────────────╮\n⚠️・| 𝐈𝐍𝐅𝐎𝐑𝐌𝐀𝐂̧𝐎̃𝐄𝐒 𝐈𝐌𝐏𝐎𝐑𝐓𝐀𝐍𝐓𝐄𝐒\n╰─────────────── ◈ ───────────────╯\n\n➜ Todas as informações devem ser verdadeiras e estar atualizadas.\n➜ A proposta deve apresentar condições claras e objetivos compatíveis com uma colaboração mútua.\n➜ O envio do formulário não garante a aprovação da parceria.\n➜ A NÊMESIS poderá recusar propostas que não atendam aos critérios estabelecidos pela organização.\n\n╰─────────────── ◈ ───────────────╯\n\n⟡・ Agradecemos pelo interesse em estabelecer uma parceria com a NÊMESIS. Preencha o formulário com atenção para que nossa equipe possa avaliar sua proposta e entrar em contato com o representante responsável.',
     ativo: true,
     cargosNotificar: [],
-    canalNotificacaoId: '',
+    canalNotificacaoId: '1545835428530360401',
     paginas: [
       {
         titulo: 'Identificação da parceria',
