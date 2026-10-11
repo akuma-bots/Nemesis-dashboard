@@ -318,6 +318,7 @@ exports.handler = async (event) => {
       revisor_id: null,
       timestamp: agora,
       criado_em: agora,
+      criadoEm: agora,
       atualizado_em: agora,
       nome: String(usuario.global_name || usuario.username || "Membro"),
       formTitulo: String(form.titulo_painel || form.nome || ""),
