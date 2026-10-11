@@ -327,7 +327,12 @@ exports.handler = async (event) => {
     perfilAtual.discordId =
       chave;
 
-    if (submissao.n    /*
+    if (submissao.nome) {
+      perfilAtual.nome =
+        submissao.nome;
+    }
+
+    /*
      * Crédito idempotente: a mesma submissão não pode creditar pontos
      * novamente caso a gravação do estado da missão falhe e haja retry.
      * Pontuação corrompida ou fora do limite seguro é rejeitada, não propagada.
@@ -337,8 +342,7 @@ exports.handler = async (event) => {
       submissaoId,
       recompensa
     );
-    const recompensaJaAplicada = !credito.aplicada;ual.recompensas_missoes = creditosAplicados.slice(-5000);
-    }
+    const recompensaJaAplicada = !credito.aplicada;
 
     perfilAtual.elo = Number(perfilAtual.elo ?? 1000);
     perfilAtual.vitorias = Number(perfilAtual.vitorias ?? 0);
