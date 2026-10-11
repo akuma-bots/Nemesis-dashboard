@@ -310,6 +310,9 @@ exports.handler = async (event) => {
       guild_id: GUILD_ID_NEMESIS,
       formulario_id: String(form.id),
       autor_id: String(usuario.id),
+      // Mantém os dois nomes para compatibilidade: o painel de revisão
+      // lê "itens", enquanto integrações anteriores podem usar "respostas".
+      itens,
       respostas: itens,
       status: "pendente",
       revisor_id: null,
