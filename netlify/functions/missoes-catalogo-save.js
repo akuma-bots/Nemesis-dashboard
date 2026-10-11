@@ -82,9 +82,25 @@ exports.handler = async (event) => {
         };
       }
 
+      const descricao = String(item?.descricao || "");
+
+      if (descricao.length > 20000) {
+        return {
+          statusCode: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store",
+          },
+          body: JSON.stringify({
+            erro: "Cada descrição de missão pode ter no máximo 20.000 caracteres.",
+          }),
+        };
+      }
+
       const missao = normalizarMissao({
         ...item,
         tipo,
+        descricao,
       });
 
       if (!missao) {
