@@ -362,10 +362,8 @@ exports.handler = async (event) => {
      */
     submissao.status = "aprovada";
 
-    submissao.recompensaAplicada =
-      recompensaJaAplicada ? 0 : recompensa;
-    submissao.recompensaJaAplicada =
-      true;
+    submissao.recompensaAplicada = recompensa;
+    submissao.recompensaIdempotente = recompensaJaAplicada;
 
     submissao.recompensaAplicadaEm =
       agora;
