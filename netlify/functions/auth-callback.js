@@ -37,11 +37,13 @@ exports.handler = async (event) => {
       statusCode: 302,
       headers: {
         Location: "/dashboard.html",
+        "Cache-Control": "no-store",
+      },
+      multiValueHeaders: {
         "Set-Cookie": [
           criarCookieSessao(tokenData.access_token, expiracao),
           cookieLimparEstadoOAuth(),
         ],
-        "Cache-Control": "no-store",
       },
       body: "",
     };
