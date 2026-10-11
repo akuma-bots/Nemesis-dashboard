@@ -203,6 +203,53 @@ exports.handler = async (event) => {
       });
     }
 
+    // Limites preventivos para evitar payloads excessivos e IDs inválidos
+    // em custom_id de componentes do Discord.
+    if (corpo.formularios.length > 100) {
+      return json(400, {
+        erro: "O limite é de 100 formulários por servidor.",
+      });
+    }
+
+    const idsRecebidos = new Set();
+    for (const formulario of corpo.formularios) {
+      const id = String(formulario?.id || "").trim();
+      if (id.length > 60) {
+        return json(400, {
+          erro: "O ID de cada formulário deve ter no máximo 60 caracteres.",
+        });
+      }
+      if (id && idsRecebidos.has(id)) {
+        return json(400, {
+          erro: `ID de formulário duplicado: ${id}`,
+        });
+      }
+      if (id) idsRecebidos.add(id);
+
+      const paginas = Array.isArray(formulario?.paginas)
+        ? formulario.paginas
+        : [];
+      if (paginas.length > 40) {
+        return json(400, {
+          erro: "Cada formulário pode ter no máximo 40 páginas.",
+        });
+      }
+
+      const totalPerguntas = paginas.reduce((total, pagina) => {
+        const perguntas = Array.isArray(pagina)
+          ? pagina
+          : Array.isArray(pagina?.perguntas)
+            ? pagina.perguntas
+            : [];
+        return total + perguntas.length;
+      }, 0);
+      if (totalPerguntas > 200) {
+        return json(400, {
+          erro: "Cada formulário pode ter no máximo 200 perguntas.",
+        });
+      }
+    }
+
     const existentes = comPadrao(
       await carregarBlob(
         "formularios.json",
