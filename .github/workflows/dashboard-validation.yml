@@ -18,3 +18,5 @@ jobs:
           node-version: "20"
       - name: Validate JavaScript and JSON
         run: npm run build
+      - name: Run regression tests
+        run: npm test
