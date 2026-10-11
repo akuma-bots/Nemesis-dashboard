@@ -113,7 +113,11 @@ function cartao(m) {
   let tipoExibicao = 'MISSÃO';
 
   if (
-    m.tipo === 'pve'
+    m.tipo === 'pve' ||
+    m.tipo === 'contribuicao' ||
+    m.tipo === 'contribuição' ||
+    m.tipo === 'pontuacao' ||
+    m.tipo === 'pontuação'
   ) {
     tipoExibicao = 'PONTUAÇÃO';
   }
@@ -366,7 +370,7 @@ fetch('/.netlify/functions/missoes-get')
 
     /*
     |--------------------------------------------------------------
-    | CONTRIBUIÇÃO
+    | PONTUAÇÃO
     |--------------------------------------------------------------
     | O tipo antigo "pve" continua funcionando.
     |--------------------------------------------------------------
