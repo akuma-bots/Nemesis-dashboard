@@ -40,16 +40,30 @@ async function checarLogin() {
 
 async function listar() {
   raiz.replaceChildren(h('p', { class: 'vazio' }, 'Carregando…'));
-  const d = await (await fetch('/.netlify/functions/formularios-get')).json();
-  if (!d.formularios.length) {
+  const resposta = await fetch('/.netlify/functions/formularios-get', { cache: 'no-store' });
+  const d = await resposta.json();
+  const normalizarTitulo = (valor) => String(valor || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  const formularios = (Array.isArray(d.formularios) ? d.formularios : []).filter((f) => {
+    const titulo = normalizarTitulo(f.titulo || f.titulo_painel || f.nome);
+    return !titulo.includes('staff') &&
+      !titulo.includes('parceria') &&
+      !(titulo.includes('entrar') && titulo.includes('gangue'));
+  });
+  if (!formularios.length) {
     raiz.replaceChildren(h('p', { class: 'vazio' }, 'Nenhum formulário aberto no momento.'));
     return;
   }
-  raiz.replaceChildren(h('div', { class: 'grade' }, d.formularios.map((f) =>
+  raiz.replaceChildren(h('div', { class: 'grade' }, formularios.map((f) =>
     h('a', { class: 'cartao', href: '?id=' + encodeURIComponent(f.id) },
       h('h3', {}, f.titulo),
       h('p', { class: 'texto-suave' }, f.descricao || ''),
-      h('span', { class: 'nx-mais' }, 'Candidatar-se')))));
+      h('span', { class: 'nx-mais' }, 'Candidatar-se'))));
+
 }
 
 async function abrir(id) {
