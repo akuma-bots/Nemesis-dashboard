@@ -46,8 +46,8 @@ exports.handler = async (event) => {
       const titulo = normalizarTitulo(
         formulario?.titulo_painel || formulario?.titulo || formulario?.nome
       );
-      return titulo.includes("staff") ||
-        titulo.includes("parceria") ||
+      return (titulo.includes("staff") && !titulo.includes("processo seletivo")) ||
+        (titulo.includes("parceria") && !titulo.includes("estabelecimento de alianca")) ||
         (titulo.includes("entrar") && titulo.includes("gangue"));
     };
 
