@@ -127,7 +127,14 @@ exports.handler = async (event) => {
     return json(200, {
       ok: true,
       guildId: GUILD_ID_NEMESIS,
-      formularios,
+      formularios: formularios.map((formulario) => ({
+        ...formulario,
+        // Mantém compatibilidade com os nomes de campos usados pelo editor.
+        titulo: formulario.titulo || formulario.titulo_painel || formulario.nome || "",
+        descricao: formulario.descricao || formulario.descricao_painel || "",
+        cargosNotificar: formulario.cargosNotificar || formulario.cargos_notificar || [],
+        canalNotificacaoId: formulario.canalNotificacaoId || formulario.canal_notificacao_id || "",
+      })),
       respostas,
       cargos,
       canais,
