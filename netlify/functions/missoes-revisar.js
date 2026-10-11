@@ -414,14 +414,11 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
       },
       body: JSON.stringify({
-        erro:
-          "Erro interno ao revisar a submissão.",
-        detalhe:
-          erro.message,
+        erro: "Erro interno ao revisar a submissão.",
       }),
     };
   }
