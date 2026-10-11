@@ -27,7 +27,8 @@ function normalizarTipo(tipo) {
   if (
     valor === "missao" ||
     valor === "missões" ||
-    valor === "missoes"
+    valor === "missoes" ||
+    valor === "pvp"
   ) {
     return "missao";
   }
@@ -37,6 +38,7 @@ function normalizarTipo(tipo) {
     valor === "contribuição" ||
     valor === "contribuicoes" ||
     valor === "contribuições" ||
+    valor === "pve" ||
     valor === "pontuacao" ||
     valor === "pontuação" ||
     valor === "pontuacoes" ||
