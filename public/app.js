@@ -119,21 +119,16 @@ async function selecionarServidor(servidor) {
 
   document
     .querySelectorAll(".item-servidor")
-    .forEach((el) =>
-      el.classList.remove("ativo")
-    );
+    .forEach((el) => el.classList.remove("ativo"));
 
-  document
-    .getElementById(`servidor-${guildId}`)
-    .classList.add("ativo");
-
+  const item = document.getElementById(`servidor-${guildId}`);
+  if (item) item.classList.add("ativo");
   servidorAtual = guildId;
 
-  const conteudo =
-    document.getElementById("conteudo");
+  const conteudo = document.getElementById("conteudo");
+  conteudo.innerHTML = "<p style='color:var(--steel)'>Carregando...</p>";
 
-  conteudo.innerHTML =
-    "<p style='color:var(--steel)'>Ca  if (erroBot) {
+  if (erroBot) {
     conteudo.innerHTML = `
       <div class="card-bot-ausente">
         <h3>Não foi possível confirmar a presença do bot</h3>
@@ -159,27 +154,17 @@ async function selecionarServidor(servidor) {
       </div>
     `;
     return;
-  }`;
-
-    return;
   }
 
   try {
-    const dados = await api(
-      `/api/guild-detail?guildId=${guildId}`
-    );
-
+    const dados = await api(`/api/guild-detail?guildId=${encodeURIComponent(guildId)}`);
     renderizarPainel(dados);
   } catch (e) {
     conteudo.innerHTML = `
-      <p class="aviso erro">
-        Erro ao carregar:
-        ${escaparHtml(e.message)}
-      </p>
+      <p class="aviso erro">Erro ao carregar: ${escaparHtml(e.message)}</p>
     `;
   }
 }
-
 function opcoesCanais(
   canais,
   tipos,
