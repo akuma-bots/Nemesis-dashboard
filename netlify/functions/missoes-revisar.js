@@ -334,41 +334,38 @@ exports.handler = async (event) => {
     }
 
     /*
-     * Soma a pontuação
-     * Não sobrescreve os pontos
-     * existentes.
+     * Crédito idempotente: se o salvamento de missoes.json falhar
+     * depois do competitivo.json, uma nova tentativa não duplica pontos.
+     * O ID da submissão fica registrado junto ao perfil que recebeu a recompensa.
      */
-    perfilAtual.pontos =
-      Number(
-        perfilAtual.pontos || 0
-      ) + recompensa;
+    const creditosAplicados = Array.isArray(perfilAtual.recompensas_missoes)
+      ? perfilAtual.recompensas_missoes.map(String)
+      : [];
+    const recompensaJaAplicada = creditosAplicados.includes(submissaoId);
 
-    perfilAtual.elo =
-      Number(
-        perfilAtual.elo ?? 1000
-      );
+    if (!recompensaJaAplicada) {
+      perfilAtual.pontos =
+        Number(perfilAtual.pontos || 0) + recompensa;
+      creditosAplicados.push(submissaoId);
+      perfilAtual.recompensas_missoes = creditosAplicados.slice(-5000);
+    }
 
-    perfilAtual.vitorias =
-      Number(
-        perfilAtual.vitorias ?? 0
-      );
+    perfilAtual.elo = Number(perfilAtual.elo ?? 1000);
+    perfilAtual.vitorias = Number(perfilAtual.vitorias ?? 0);
+    perfilAtual.derrotas = Number(perfilAtual.derrotas ?? 0);
 
-    perfilAtual.derrotas =
-      Number(
-        perfilAtual.derrotas ?? 0
-      );
-
-    competitivo.perfis[chave] =
-      perfilAtual;
+    competitivo.perfis[chave] = perfilAtual;
 
     /*
-     * Marca a recompensa como aplicada.
+     * Marca a recompensa como aplicada. Se esta gravação falhar, a lista
+     * de IDs no perfil protege a próxima tentativa contra crédito duplicado.
      */
-    submissao.status =
-      "aprovada";
+    submissao.status = "aprovada";
 
     submissao.recompensaAplicada =
-      recompensa;
+      recompensaJaAplicada ? 0 : recompensa;
+    submissao.recompensaJaAplicada =
+      true;
 
     submissao.recompensaAplicadaEm =
       agora;
