@@ -45,21 +45,50 @@ exports.handler = async (event) => {
     const ultimaAtualizacao = status?.updated_at
       ? Date.parse(status.updated_at)
       : NaN;
-    const heartbeatRecente =
+    const idadeSegundos = Number.isFinite(ultimaAtualizacao)
+      ? Math.round((Date.now() - ultimaAtualizacao) / 1000)
+      : null;
+    const timestampValido =
       Number.isFinite(ultimaAtualizacao) &&
-      Date.now() - ultimaAtualizacao <= TOLERANCIA_MS &&
       Date.now() >= ultimaAtualizacao - 30_000;
+    const heartbeatRecente =
+      timestampValido &&
+      Date.now() - ultimaAtualizacao <= TOLERANCIA_MS;
+    const guildIdConfere =
+      String(status?.guild_id || "") === GUILD_ID_NEMESIS;
+    const flagOnline = status?.online === true;
     const botOnline = Boolean(
-      heartbeatRecente &&
-      status?.online === true &&
-      String(status?.guild_id) === GUILD_ID_NEMESIS
+      heartbeatRecente && flagOnline && guildIdConfere
     );
+
+    let diagnostico;
+    if (!status) {
+      diagnostico = "HEARTBEAT_AUSENTE";
+    } else if (!timestampValido) {
+      diagnostico = "TIMESTAMP_INVALIDO";
+    } else if (!guildIdConfere) {
+      diagnostico = "GUILD_ID_DIFERENTE";
+    } else if (!flagOnline) {
+      diagnostico = "BOT_NAO_PRONTO_OU_SERVIDOR_NAO_ENCONTRADO";
+    } else if (!heartbeatRecente) {
+      diagnostico = "HEARTBEAT_EXPIRADO";
+    } else {
+      diagnostico = "OK";
+    }
 
     return resposta(200, {
       ok: true,
       redisConectado: true,
       botOnline,
+      diagnostico,
+      heartbeatEncontrado: Boolean(status),
+      timestampValido,
+      heartbeatRecente,
+      guildIdConfere,
+      flagOnline,
+      idadeSegundos,
       servidorId: GUILD_ID_NEMESIS,
+      guildIdHeartbeat: status?.guild_id || null,
       botNome: status?.bot_name || null,
       servidorNome: status?.guild_name || null,
       ultimaAtualizacao: Number.isFinite(ultimaAtualizacao)
@@ -67,7 +96,15 @@ exports.handler = async (event) => {
         : null,
       mensagem: botOnline
         ? "Bot e Dashboard estão acessando o mesmo Redis compartilhado."
-        : "O Redis está acessível, mas ainda não foi recebido um heartbeat recente do bot. Confira as variáveis Upstash no Render e aguarde até 1 minuto após o bot iniciar.",
+        : diagnostico === "HEARTBEAT_AUSENTE"
+          ? "A chave integracao_bot_status.json não existe no Redis. O bot pode não ter publicado o heartbeat, estar usando outro banco ou ainda não ter feito deploy da versão atual."
+          : diagnostico === "GUILD_ID_DIFERENTE"
+            ? "O heartbeat existe, mas o ID do servidor salvo pelo bot não corresponde ao servidor configurado no Dashboard."
+            : diagnostico === "BOT_NAO_PRONTO_OU_SERVIDOR_NAO_ENCONTRADO"
+              ? "O heartbeat existe, mas o bot marcou online=false. Verifique NEMESIS_GUILD_ID e os logs de conexão do Discord no Render."
+              : diagnostico === "HEARTBEAT_EXPIRADO"
+                ? "O último heartbeat tem mais de 3 minutos. Verifique se o processo do bot continua ativo no Render."
+                : "O timestamp do heartbeat é inválido. Confira a versão em execução do bot.",
     });
   } catch (erro) {
     console.error("[BOT-SYNC-STATUS]", erro);
