@@ -205,17 +205,11 @@ exports.handler = async (event) => {
         mensagem.id
       ),
 
-      texto: String(
-        texto || ""
-      ),
+      texto: textoLimpo,
 
-      requisitos: String(
-        requisitos || ""
-      ),
+      requisitos: requisitosLimpos,
 
-      premio: String(
-        premio
-      ).trim(),
+      premio: premioLimpo,
 
       banner:
         bannerLimpo ||
