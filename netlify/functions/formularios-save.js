@@ -214,9 +214,9 @@ exports.handler = async (event) => {
     const idsRecebidos = new Set();
     for (const formulario of corpo.formularios) {
       const id = String(formulario?.id || "").trim();
-      if (id.length > 60) {
+      if (id.length > 50) {
         return json(400, {
-          erro: "O ID de cada formulário deve ter no máximo 60 caracteres.",
+          erro: "O ID de cada formulário deve ter no máximo 50 caracteres.",
         });
       }
       if (id && idsRecebidos.has(id)) {
