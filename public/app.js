@@ -2682,7 +2682,10 @@ function renderizarEmbeds(d) {
 
       <textarea
         id="em-descricao"
+        maxlength="20000"
+        placeholder="Escreva a descrição da embed (até 20.000 caracteres)."
       ></textarea>
+      <div class="texto-suave" id="em-contador">0 / 20.000 caracteres</div>
     </div>
 
     <div class="linha-formulario">
@@ -2764,6 +2767,14 @@ function renderizarEmbeds(d) {
       Enviar embed
     </button>
   `;
+
+  const campoDescricao = document.getElementById("em-descricao");
+  const contadorDescricao = document.getElementById("em-contador");
+  const atualizarContadorDescricao = () => {
+    contadorDescricao.textContent = campoDescricao.value.length.toLocaleString("pt-BR") + " / 20.000 caracteres";
+  };
+  campoDescricao.addEventListener("input", atualizarContadorDescricao);
+  atualizarContadorDescricao();
 
   document.getElementById(
     "em-enviar"
