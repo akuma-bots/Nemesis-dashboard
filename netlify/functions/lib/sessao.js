@@ -68,12 +68,13 @@ function validarEstadoOAuth(event, estadoRecebido) {
   if (typeof estadoRecebido !== "string" || !estadoRecebido) return false;
   const cookies = parseCookies(event.headers?.cookie || event.headers?.Cookie);
   const estadoEsperado = cookies[NOME_COOKIE_OAUTH];
-  if (typeof estadoEsperado !== "string" || estadoEsperado.length !== estadoRecebido.length) return false;
+  if (typeof estadoEsperado !== "string") return false;
 
-  return crypto.timingSafeEqual(
-    Buffer.from(estadoEsperado, "utf8"),
-    Buffer.from(estadoRecebido, "utf8")
-  );
+  const esperado = Buffer.from(estadoEsperado, "utf8");
+  const recebido = Buffer.from(estadoRecebido, "utf8");
+  if (esperado.length !== recebido.length) return false;
+
+  return crypto.timingSafeEqual(esperado, recebido);
 }
 
 function cookieLimparEstadoOAuth() {
