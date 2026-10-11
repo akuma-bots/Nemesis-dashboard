@@ -35,7 +35,7 @@ exports.handler = async (event) => {
         let erroBot = null;
 
         try {
-          botPresente = await botEstaNoServidor(g.id);
+          botPresente = await botEstaNoServidor(g.id, bot);
         } catch (erro) {
           erroBot = erro.message;
         }
