@@ -1,4 +1,5 @@
 const { carregarBlob, salvarBlob } = require("./lib/upstash");
+const { aplicarRecompensaMissao } = require("./lib/recompensas-missoes");
 
 const {
   PADRAO,
@@ -247,9 +248,7 @@ exports.handler = async (event) => {
     );
 
     if (
-      !Number.isFinite(
-        recompensa
-      ) ||
+      !Number.isSafeInteger(recompensa) ||
       recompensa < 0
     ) {
       return {
@@ -328,26 +327,17 @@ exports.handler = async (event) => {
     perfilAtual.discordId =
       chave;
 
-    if (submissao.nome) {
-      perfilAtual.nome =
-        submissao.nome;
-    }
-
-    /*
-     * Crédito idempotente: se o salvamento de missoes.json falhar
-     * depois do competitivo.json, uma nova tentativa não duplica pontos.
-     * O ID da submissão fica registrado junto ao perfil que recebeu a recompensa.
+    if (submissao.n    /*
+     * Crédito idempotente: a mesma submissão não pode creditar pontos
+     * novamente caso a gravação do estado da missão falhe e haja retry.
+     * Pontuação corrompida ou fora do limite seguro é rejeitada, não propagada.
      */
-    const creditosAplicados = Array.isArray(perfilAtual.recompensas_missoes)
-      ? perfilAtual.recompensas_missoes.map(String)
-      : [];
-    const recompensaJaAplicada = creditosAplicados.includes(submissaoId);
-
-    if (!recompensaJaAplicada) {
-      perfilAtual.pontos =
-        Number(perfilAtual.pontos || 0) + recompensa;
-      creditosAplicados.push(submissaoId);
-      perfilAtual.recompensas_missoes = creditosAplicados.slice(-5000);
+    const credito = aplicarRecompensaMissao(
+      perfilAtual,
+      submissaoId,
+      recompensa
+    );
+    const recompensaJaAplicada = !credito.aplicada;ual.recompensas_missoes = creditosAplicados.slice(-5000);
     }
 
     perfilAtual.elo = Number(perfilAtual.elo ?? 1000);
