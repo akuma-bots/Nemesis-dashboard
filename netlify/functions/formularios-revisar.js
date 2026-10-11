@@ -1,9 +1,18 @@
+
 const { lerSessao } = require("./lib/sessao");
-const { usuarioGerenciaServidor } = require("./lib/discord");
+const {
+  usuarioGerenciaServidor,
+  buscarUsuario,
+} = require("./lib/discord");
 const { carregarBlob, salvarBlob } = require("./lib/upstash");
+const {
+  PADRAO,
+  comPadrao,
+  obterGuild,
+  GUILD_ID_NEMESIS,
+} = require("./lib/formularios-padrao");
 
 const API = "https://discord.com/api/v10";
-const GUILD_ID_NEMESIS = "1543381737961160910";
 
 const json = (status, corpo) => ({
   statusCode: status,
@@ -14,38 +23,42 @@ const json = (status, corpo) => ({
   body: JSON.stringify(corpo),
 });
 
-async function avisarCandidato(
-  resposta,
-  formulario,
-  decisao,
-  mensagem
-) {
+async function avisarCandidato(resposta, formulario, decisao, mensagem) {
+  const token = process.env.DISCORD_BOT_TOKEN;
+
+  if (!token) {
+    console.warn(
+      "[FORMULARIOS-REVISAR] DISCORD_BOT_TOKEN não configurado; aviso ignorado."
+    );
+    return;
+  }
+
+  const autorId = String(resposta.autor_id || "");
+
+  if (!autorId) return;
+
   const headers = {
-    Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+    Authorization: `Bot ${token}`,
     "Content-Type": "application/json",
   };
 
-  const autorId = String(
-    resposta.autor_id
-  );
+  const dm = await fetch(`${API}/users/@me/channels`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ recipient_id: autorId }),
+  });
 
-  const dm = await fetch(
-    `${API}/users/@me/channels`,
-    {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        recipient_id: autorId,
-      }),
-    }
-  );
-
-  if (!dm.ok) return;
+  if (!dm.ok) {
+    console.error(
+      "[FORMULARIOS-REVISAR] Não foi possível abrir DM:",
+      dm.status
+    );
+    return;
+  }
 
   const canal = await dm.json();
-
   const nomeFormulario =
-    formulario?.titulo ||
+    formulario?.titulo_painel ||
     formulario?.nome ||
     resposta.formTitulo ||
     "formulário";
@@ -56,190 +69,153 @@ async function avisarCandidato(
       : `❌ Sua candidatura em **${nomeFormulario}** foi **recusada**.`;
 
   const content = mensagem
-    ? `${base}\n\n${mensagem}`
+    ? `${base}\n\n**Mensagem da revisão:**\n${mensagem}`
     : base;
 
-  await fetch(
-    `${API}/channels/${canal.id}/messages`,
-    {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        content,
-      }),
-    }
-  );
+  const envio = await fetch(`${API}/channels/${canal.id}/messages`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ content }),
+  });
+
+  if (!envio.ok) {
+    console.error(
+      "[FORMULARIOS-REVISAR] Não foi possível enviar a DM:",
+      envio.status
+    );
+  }
 }
 
 exports.handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") {
-      return json(405, {
-        erro: "Método não permitido.",
-      });
+      return json(405, { erro: "Método não permitido." });
     }
 
     const sessao = lerSessao(event);
 
     if (!sessao) {
-      return json(401, {
-        erro: "Não autenticado.",
-      });
+      return json(401, { erro: "Não autenticado." });
     }
 
-    const gerencia =
-      await usuarioGerenciaServidor(
-        sessao.access_token,
-        GUILD_ID_NEMESIS
-      );
+    const gerencia = await usuarioGerenciaServidor(
+      sessao.access_token,
+      GUILD_ID_NEMESIS
+    );
 
     if (!gerencia) {
       return json(403, {
-        erro:
-          "Você não gerencia o servidor da NÊMESIS.",
+        erro: "Você não gerencia o servidor da NÊMESIS.",
       });
     }
 
-    const corpo = JSON.parse(
-      event.body || "{}"
+    let corpo;
+
+    try {
+      corpo = JSON.parse(event.body || "{}");
+    } catch {
+      return json(400, { erro: "Corpo da requisição inválido." });
+    }
+
+    const respostaId = String(corpo.respostaId || "").trim();
+    const decisao = String(corpo.decisao || "").trim();
+    const mensagem = String(corpo.mensagem || "")
+      .trim()
+      .slice(0, 1000);
+
+    if (!respostaId || !["aprovada", "recusada"].includes(decisao)) {
+      return json(400, {
+        erro:
+          "Informe respostaId e decisao como aprovada ou recusada.",
+      });
+    }
+
+    const formulariosDados = comPadrao(
+      await carregarBlob("formularios.json", PADRAO)
     );
 
-    const respostaId =
-      String(corpo.respostaId || "").trim();
+    const listaFormularios = obterGuild(formulariosDados);
 
-    const decisao =
-      String(corpo.decisao || "").trim();
+    const respostasDadosBrutos = await carregarBlob(
+      "formularios_respostas.json",
+      {}
+    );
 
-    const mensagem =
-      String(corpo.mensagem || "")
-        .trim()
-        .slice(0, 1000);
+    const respostasDados =
+      respostasDadosBrutos &&
+      typeof respostasDadosBrutos === "object" &&
+      !Array.isArray(respostasDadosBrutos)
+        ? respostasDadosBrutos
+        : {};
 
-    if (
-      !respostaId ||
-      !["aprovada", "recusada"].includes(
-        decisao
-      )
-    ) {
-      return json(400, {
-        erro:
-          "respostaId e decisao (aprovada/recusada) são obrigatórios.",
+    const listaRespostas = Array.isArray(
+      respostasDados[GUILD_ID_NEMESIS]
+    )
+      ? respostasDados[GUILD_ID_NEMESIS]
+      : [];
+
+    const indice = listaRespostas.findIndex(
+      (item) => String(item.id) === respostaId
+    );
+
+    if (indice < 0) {
+      return json(404, { erro: "Candidatura não encontrada." });
+    }
+
+    const resposta = listaRespostas[indice];
+
+    if (resposta.status !== "pendente") {
+      return json(409, {
+        erro: "Essa candidatura já foi revisada.",
       });
     }
 
-    const formularios =
-      await carregarBlob(
-        "formularios.json",
-        {}
+    const formulario = listaFormularios.find(
+      (item) =>
+        String(item.id) === String(resposta.formulario_id)
+    );
+
+    let usuarioDiscord;
+
+    try {
+      usuarioDiscord = await buscarUsuario(sessao.access_token);
+    } catch (erro) {
+      console.error(
+        "[FORMULARIOS-REVISAR] Falha ao identificar revisor:",
+        erro
       );
-
-    const respostas =
-      await carregarBlob(
-        "formularios_respostas.json",
-        {}
-      );
-
-    const listaRespostas =
-      Array.isArray(
-        respostas[GUILD_ID_NEMESIS]
-      )
-        ? respostas[GUILD_ID_NEMESIS]
-        : [];
-
-    const resposta =
-      listaRespostas.find(
-        (item) =>
-          String(item.id) ===
-          respostaId
-      );
-
-    if (!resposta) {
-      return json(404, {
-        erro:
-          "Candidatura não encontrada.",
+      return json(401, {
+        erro: "Não foi possível identificar sua conta do Discord.",
       });
     }
 
-    if (
-      resposta.status !==
-      "pendente"
-    ) {
-      return json(400, {
-        erro:
-          "Essa candidatura já foi revisada.",
+    if (!usuarioDiscord || !usuarioDiscord.id) {
+      return json(401, {
+        erro: "Não foi possível identificar sua conta do Discord.",
       });
     }
-
-    const listaFormularios =
-      Array.isArray(
-        formularios[
-          GUILD_ID_NEMESIS
-        ]
-      )
-        ? formularios[
-            GUILD_ID_NEMESIS
-          ]
-        : Array.isArray(
-            formularios.formularios
-          )
-          ? formularios.formularios
-          : [];
-
-    const formulario =
-      listaFormularios.find(
-        (item) =>
-          String(item.id) ===
-          String(
-            resposta.formulario_id
-          )
-      );
-
-    const usuarioDiscord =
-      await require("./lib/discord")
-        .buscarUsuario(
-          sessao.access_token
-        );
 
     const agora = Date.now();
 
-    resposta.status =
-      decisao;
+    const atualizada = {
+      ...resposta,
+      status: decisao,
+      revisor_id: String(usuarioDiscord.id),
+      atualizado_em: agora,
+      ...(decisao === "aprovada"
+        ? { aprovado_em: agora }
+        : { rejeitada_em: agora }),
+      ...(mensagem ? { mensagem_revisao: mensagem } : {}),
+    };
 
-    resposta.revisor_id =
-      String(
-        usuarioDiscord.id
-      );
+    listaRespostas[indice] = atualizada;
+    respostasDados[GUILD_ID_NEMESIS] = listaRespostas;
 
-    resposta.atualizado_em =
-      agora;
-
-    if (
-      decisao === "aprovada"
-    ) {
-      resposta.aprovado_em =
-        agora;
-    } else {
-      resposta.rejeitada_em =
-        agora;
-    }
-
-    if (mensagem) {
-      resposta.mensagem_revisao =
-        mensagem;
-    }
-
-    respostas[
-      GUILD_ID_NEMESIS
-    ] = listaRespostas;
-
-    await salvarBlob(
-      "formularios_respostas.json",
-      respostas
-    );
+    await salvarBlob("formularios_respostas.json", respostasDados);
 
     try {
       await avisarCandidato(
-        resposta,
+        atualizada,
         formulario,
         decisao,
         mensagem
@@ -254,23 +230,17 @@ exports.handler = async (event) => {
     return json(200, {
       ok: true,
       resposta: {
-        id: resposta.id,
-        status: resposta.status,
-        revisor_id:
-          resposta.revisor_id,
-        atualizado_em:
-          resposta.atualizado_em,
+        id: atualizada.id,
+        status: atualizada.status,
+        revisor_id: atualizada.revisor_id,
+        atualizado_em: atualizada.atualizado_em,
       },
     });
   } catch (erro) {
-    console.error(
-      "[FORMULARIOS-REVISAR]",
-      erro
-    );
+    console.error("[FORMULARIOS-REVISAR]", erro);
 
     return json(500, {
-      erro:
-        "Erro interno ao revisar a candidatura.",
+      erro: "Erro interno ao revisar a candidatura.",
     });
   }
 };
