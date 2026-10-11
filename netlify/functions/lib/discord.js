@@ -20,7 +20,9 @@ async function discordFetch(url, options = {}, maxRetries = 2) {
       dados = {};
     }
 
-    const retryHeader = Number(resposta.headers.get("retry-after"));
+    const retryHeaderValor = resposta.headers.get("retry-after");
+    const retryHeader =
+      retryHeaderValor === null ? NaN : Number(retryHeaderValor);
     const retryBody = Number(dados.retry_after);
     const esperaSegundos =
       Number.isFinite(retryBody) && retryBody >= 0
