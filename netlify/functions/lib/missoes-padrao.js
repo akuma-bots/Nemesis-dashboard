@@ -5,7 +5,7 @@ const TIPOS = {
   },
 
   contribuicao: {
-    nome: "Contribuições",
+    nome: "Pontuação",
     icone: "🤝",
   },
 
@@ -36,7 +36,11 @@ function normalizarTipo(tipo) {
     valor === "contribuicao" ||
     valor === "contribuição" ||
     valor === "contribuicoes" ||
-    valor === "contribuições"
+    valor === "contribuições" ||
+    valor === "pontuacao" ||
+    valor === "pontuação" ||
+    valor === "pontuacoes" ||
+    valor === "pontuações"
   ) {
     return "contribuicao";
   }
