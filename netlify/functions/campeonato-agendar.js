@@ -4,7 +4,10 @@ const { criarEventoAgendado } = require("./lib/discord");
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
-  const { guildId, nome, descricao, inicio, canalVozId } = JSON.parse(event.body || "{}");
+  let corpo;
+  try { corpo = JSON.parse(event.body || "{}"); }
+  catch { return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "JSON inválido." }) }; }
+  const { guildId, nome, descricao, inicio, canalVozId } = corpo;
   const { erro } = await exigirGerenciaServidor(event, guildId);
   if (erro) return erro;
 
@@ -12,6 +15,9 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ erro: "nome e inicio (data/hora) são obrigatórios" }) };
   }
 
+  if (canalVozId && !/^\d{17,20}$/.test(String(canalVozId))) {
+    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "canalVozId inválido." }) };
+  }
   const inicioDate = new Date(inicio);
   if (Number.isNaN(inicioDate.getTime()) || inicioDate.getTime() <= Date.now()) {
     return { statusCode: 400, body: JSON.stringify({ erro: "Data inválida ou no passado." }) };
@@ -20,8 +26,8 @@ exports.handler = async (event) => {
 
   try {
     const evento = await criarEventoAgendado(guildId, {
-      nome,
-      descricao: descricao || "Campeonato criado pelo painel.",
+      nome: String(nome).trim().slice(0, 100),
+      descricao: String(descricao || "Campeonato criado pelo painel.").trim().slice(0, 1000),
       inicioISO: inicioDate.toISOString(),
       fimISO: fimDate.toISOString(),
       canalVozId: canalVozId || null,
