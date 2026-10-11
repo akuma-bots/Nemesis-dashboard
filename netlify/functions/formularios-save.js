@@ -226,49 +226,27 @@ exports.handler = async (event) => {
         normalizarFormularioDashboard
       );
 
-    const mapa = new Map();
+    const mapaExistentes = new Map();
 
     for (const formulario of atuais) {
       if (!formulario?.id) continue;
-
-      mapa.set(
-        String(formulario.id),
-        formulario
-      );
+      mapaExistentes.set(String(formulario.id), formulario);
     }
 
-    for (const formulario of enviados) {
-      const id = String(
-        formulario.id
-      );
-
-      const anterior =
-        mapa.get(id);
-
+    // O site envia a lista completa: a lista final deve refletir exatamente
+    // o que está no editor, sem ressuscitar formulários removidos.
+    const formulariosFinais = enviados.map((formulario) => {
+      const anterior = mapaExistentes.get(String(formulario.id));
       if (anterior) {
         formulario.criado_em =
-          anterior.criado_em ||
-          formulario.criado_em;
-
+          anterior.criado_em || formulario.criado_em;
         formulario.criado_por =
-          anterior.criado_por ||
-          formulario.criado_por;
-
+          anterior.criado_por || formulario.criado_por;
         formulario.timestamp =
-          anterior.timestamp ||
-          formulario.timestamp;
+          anterior.timestamp || formulario.timestamp;
       }
-
-      mapa.set(
-        id,
-        formulario
-      );
-    }
-
-    const formulariosFinais =
-      Array.from(
-        mapa.values()
-      );
+      return formulario;
+    });
 
     existentes[
       GUILD_ID_NEMESIS
