@@ -34,27 +34,30 @@ exports.handler = async (event) => {
 
     const formularios = obterGuild(dados);
 
-    const titulosLegados = new Set([
-      "formulario staff",
-      "entrar nemesis gangue",
-      "formulario parceria",
-    ]);
     const normalizarTitulo = (valor) =>
       String(valor || "")
-        .normalize("NFD")
+        .normalize("NFKD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, " ")
         .trim();
 
+    const ehFormularioLegado = (formulario) => {
+      const titulo = normalizarTitulo(
+        formulario?.titulo_painel || formulario?.titulo || formulario?.nome
+      );
+      return titulo.includes("staff") ||
+        titulo.includes("parceria") ||
+        (titulo.includes("entrar") && titulo.includes("gangue"));
+    };
+
     const ativos = Array.isArray(formularios)
-      ? formularios.filter((formulario) => {
-          if (!formulario || formulario.ativo === false) return false;
-          const titulo = normalizarTitulo(
-            formulario.titulo_painel || formulario.titulo || formulario.nome
-          );
-          return !titulosLegados.has(titulo);
-        })
+      ? formularios.filter(
+          (formulario) =>
+            formulario &&
+            formulario.ativo !== false &&
+            !ehFormularioLegado(formulario)
+        )
       : [];
 
     const parametros =
