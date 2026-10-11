@@ -5,7 +5,7 @@ const {
   listarCargos,
   listarCanais,
 } = require("./lib/discord");
-const { carregarBlob } = require("./lib/upstash");
+const { carregarBlob, salvarBlob } = require("./lib/upstash");
 const {
   PADRAO,
   comPadrao,
@@ -56,9 +56,35 @@ exports.handler = async (event) => {
 
     const formulariosGuild = obterGuild(formulariosDados);
 
-    const formularios = Array.isArray(formulariosGuild)
+    // Remove apenas os três formulários antigos solicitados; preserva
+    // os modelos atuais de processo seletivo, aliança e ingresso.
+    const titulosLegados = new Set([
+      "formulario staff",
+      "entrar nemesis gangue",
+      "formulario parceria",
+    ]);
+    const normalizarTitulo = (valor) =>
+      String(valor || "")
+        .normalize("NFD")
+        .replace(/[\\u0300-\\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+
+    const formularios = (Array.isArray(formulariosGuild)
       ? formulariosGuild
-      : [];
+      : []).filter((formulario) => {
+        const titulo = normalizarTitulo(
+          formulario?.titulo_painel || formulario?.titulo || formulario?.nome
+        );
+        return !titulosLegados.has(titulo);
+      });
+
+    if (formularios.length !== formulariosGuild.length) {
+      formulariosDados[GUILD_ID_NEMESIS] = formularios;
+      delete formulariosDados.formularios;
+      await salvarBlob("formularios.json", formulariosDados);
+    }
 
     // Respostas ficam em arquivo separado, como no bot.
     const respostasDados = await carregarBlob(
