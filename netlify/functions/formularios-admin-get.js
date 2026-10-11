@@ -56,8 +56,7 @@ exports.handler = async (event) => {
 
     const formulariosGuild = obterGuild(formulariosDados);
 
-    // Remove apenas os três formulários antigos solicitados; preserva
-    // os modelos atuais de processo seletivo, aliança e ingresso.
+    // Oculta somente os modelos antigos. Não modifica o banco durante uma requisição GET.
     const normalizarTitulo = (valor) =>
       String(valor || "")
         .normalize("NFKD")
@@ -70,20 +69,14 @@ exports.handler = async (event) => {
       const titulo = normalizarTitulo(
         formulario?.titulo_painel || formulario?.titulo || formulario?.nome
       );
-      return titulo.includes("staff") ||
-        titulo.includes("parceria") ||
+      return (titulo.includes("staff") && !titulo.includes("processo seletivo")) ||
+        (titulo.includes("parceria") && !titulo.includes("estabelecimento de alianca")) ||
         (titulo.includes("entrar") && titulo.includes("gangue"));
     };
 
     const formularios = (Array.isArray(formulariosGuild)
       ? formulariosGuild
       : []).filter((formulario) => !ehFormularioLegado(formulario));
-
-    if (formularios.length !== formulariosGuild.length) {
-      formulariosDados[GUILD_ID_NEMESIS] = formularios;
-      delete formulariosDados.formularios;
-      await salvarBlob("formularios.json", formulariosDados);
-    }
 
     // Respostas ficam em arquivo separado, como no bot.
     const respostasDados = await carregarBlob(
