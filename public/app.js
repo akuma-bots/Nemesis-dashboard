@@ -108,21 +108,15 @@ function renderizarListaServidores(
     `;
 
     div.onclick = () =>
-      selecionarServidor(
-        s.id,
-        s.nome,
-        s.bot_presente
-      );
+      selecionarServidor(s);
 
     container.appendChild(div);
   });
 }
 
-async function selecionarServidor(
-  guildId,
-  nome,
-  botPresente
-) {
+async function selecionarServidor(servidor) {
+  const { id: guildId, nome, bot_presente: botPresente, erro_bot: erroBot, bot_id: botId } = servidor;
+
   document
     .querySelectorAll(".item-servidor")
     .forEach((el) =>
@@ -139,22 +133,33 @@ async function selecionarServidor(
     document.getElementById("conteudo");
 
   conteudo.innerHTML =
-    "<p style='color:var(--steel)'>Carregando...</p>";
-
-  if (!botPresente) {
+    "<p style='color:var(--steel)'>Ca  if (erroBot) {
     conteudo.innerHTML = `
       <div class="card-bot-ausente">
-        <h3>
-          O bot não está em
-          "${escaparHtml(nome)}"
-        </h3>
-
-        <p>
-          Convide o bot pro servidor primeiro,
-          depois volte aqui.
-        </p>
+        <h3>Não foi possível confirmar a presença do bot</h3>
+        <p>O Discord retornou um erro durante a verificação. O painel não deve concluir que o bot está ausente quando a API falha.</p>
+        <p><strong>Diagnóstico:</strong> ${escaparHtml(erroBot)}</p>
+        <p>Confira no Netlify se <code>DISCORD_BOT_TOKEN</code> corresponde ao bot correto e se o token está atualizado.</p>
+        <button class="botao botao-primario" id="tentar-verificar-bot">Tentar novamente</button>
       </div>
     `;
+    document.getElementById("tentar-verificar-bot").onclick = () => iniciar();
+    return;
+  }
+
+  if (!botPresente) {
+    const convite = botId
+      ? `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(botId)}&scope=bot%20applications.commands`
+      : null;
+    conteudo.innerHTML = `
+      <div class="card-bot-ausente">
+        <h3>O bot não está em "${escaparHtml(nome)}"</h3>
+        <p>Convide o bot da NÊMESIS para este servidor e atualize o painel.</p>
+        ${convite ? `<a class="botao botao-primario" href="${convite}" target="_blank" rel="noopener noreferrer">Convidar bot</a>` : ""}
+      </div>
+    `;
+    return;
+  }`;
 
     return;
   }
