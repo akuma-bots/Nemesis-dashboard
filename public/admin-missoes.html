@@ -134,7 +134,7 @@ async function iniciar() {
 function novaMissao() {
   missoes.push({
     id: 'missao_' + Date.now(),
-    tipo: 'pvp',
+    tipo: 'missao',
     titulo: 'Nova missão',
     descricao: '',
     pontos: 10,
@@ -196,13 +196,13 @@ function blocoMissao(m, i) {
 
           h(
             'option',
-            { value: 'pvp' },
+            { value: 'missao' },
             'Missão'
           ),
 
           h(
             'option',
-            { value: 'pve' },
+            { value: 'contribuicao' },
             'Pontuação'
           ),
 
