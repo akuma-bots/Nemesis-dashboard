@@ -334,7 +334,7 @@ exports.handler = async (event) => {
     }
 
     /*
-     * Soma os P.C.
+     * Soma a pontuação
      * Não sobrescreve os pontos
      * existentes.
      */
