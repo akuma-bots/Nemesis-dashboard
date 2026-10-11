@@ -98,11 +98,11 @@ function renderizarListaServidores(
         </div>
 
         ${
-          !s.bot_presente
-            ? `<div class="tag-ausente">
-                 bot não está aqui
-               </div>`
-            : ""
+          s.erro_bot
+            ? `<div class="tag-ausente">falha ao verificar o bot</div>`
+            : !s.bot_presente
+              ? `<div class="tag-ausente">bot não está aqui</div>`
+              : ""
         }
       </div>
     `;
