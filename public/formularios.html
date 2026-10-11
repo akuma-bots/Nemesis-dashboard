@@ -48,21 +48,28 @@ async function listar() {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
-  const formularios = (Array.isArray(d.formularios) ? d.formularios : []).filter((f) => {
-    const titulo = normalizarTitulo(f.titulo || f.titulo_painel || f.nome);
-    return !titulo.includes('staff') &&
-      !titulo.includes('parceria') &&
-      !(titulo.includes('entrar') && titulo.includes('gangue'));
-  });
+  const ehFormularioLegado = (formulario) => {
+    const titulo = normalizarTitulo(formulario.titulo || formulario.titulo_painel || formulario.nome);
+    return (titulo.includes('staff') && !titulo.includes('processo seletivo')) ||
+      (titulo.includes('parceria') && !titulo.includes('estabelecimento de alianca')) ||
+      (titulo.includes('entrar') && titulo.includes('gangue'));
+  };
+  const formularios = (Array.isArray(d.formularios) ? d.formularios : []).filter((f) => !ehFormularioLegado(f));
   if (!formularios.length) {
     raiz.replaceChildren(h('p', { class: 'vazio' }, 'Nenhum formulário aberto no momento.'));
     return;
   }
-  raiz.replaceChildren(h('div', { class: 'grade' }, formularios.map((f) =>
-    h('a', { class: 'cartao', href: '?id=' + encodeURIComponent(f.id) },
-      h('h3', {}, f.titulo),
-      h('p', { class: 'texto-suave' }, f.descricao || ''),
-      h('span', { class: 'nx-mais' }, 'Candidatar-se'))));
+  raiz.replaceChildren(
+    h('div', { class: 'grade' },
+      formularios.map((f) =>
+        h('a', { class: 'cartao', href: '?id=' + encodeURIComponent(f.id) },
+          h('h3', {}, f.titulo),
+          h('p', { class: 'texto-suave' }, f.descricao || ''),
+          h('span', { class: 'nx-mais' }, 'Candidatar-se')
+        )
+      )
+    )
+  );
 
 }
 
