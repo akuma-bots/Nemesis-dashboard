@@ -124,28 +124,64 @@ exports.handler = async (event) => {
       );
     }
 
+    const formulariosNormalizados = formularios.map((formulario) => ({
+      ...formulario,
+      // Mantém compatibilidade com os nomes de campos usados pelo editor.
+      titulo: formulario.titulo || formulario.titulo_painel || formulario.nome || "",
+      descricao: formulario.descricao || formulario.descricao_painel || "",
+      cargosNotificar: formulario.cargosNotificar || formulario.cargos_notificar || [],
+      canalNotificacaoId: formulario.canalNotificacaoId || formulario.canal_notificacao_id || "",
+    }));
+    const formulariosPorId = new Map(
+      formulariosNormalizados.map((formulario) => [String(formulario.id), formulario])
+    );
+
+    const respostasNormalizadas = respostas.map((resposta) => {
+      const formulario = formulariosPorId.get(String(resposta.formulario_id));
+      let itens = Array.isArray(resposta.itens) ? resposta.itens : null;
+
+      if (!itens && Array.isArray(resposta.respostas)) {
+        if (resposta.respostas.every((item) => item && typeof item === "object" && "resposta" in item)) {
+          itens = resposta.respostas;
+        } else {
+          const perguntas = (formulario?.paginas || []).flatMap((pagina) => {
+            const listaPerguntas = Array.isArray(pagina)
+              ? pagina
+              : Array.isArray(pagina?.perguntas)
+                ? pagina.perguntas
+                : [];
+            return listaPerguntas.map((pergunta) =>
+              typeof pergunta === "string"
+                ? pergunta
+                : String(pergunta?.texto || pergunta?.pergunta || "Pergunta")
+            );
+          });
+          itens = resposta.respostas.map((valor, indice) => ({
+            pergunta: perguntas[indice] || `Pergunta ${indice + 1}`,
+            resposta: String(valor ?? "—"),
+          }));
+        }
+      }
+
+      const dataOriginal = Number(resposta.criadoEm || resposta.criado_em || resposta.timestamp || 0);
+      const criadoEm = dataOriginal > 0 && dataOriginal < 1000000000000
+        ? dataOriginal * 1000
+        : dataOriginal;
+
+      return {
+        ...resposta,
+        itens: itens || [],
+        criadoEm,
+        nome: resposta.nome || (resposta.autor_id ? `Usuário Discord ${resposta.autor_id}` : "Membro"),
+        formTitulo: resposta.formTitulo || formulario?.titulo || formulario?.titulo_painel || formulario?.nome || "Formulário",
+      };
+    });
+
     return json(200, {
       ok: true,
       guildId: GUILD_ID_NEMESIS,
-      formularios: formularios.map((formulario) => ({
-        ...formulario,
-        // Mantém compatibilidade com os nomes de campos usados pelo editor.
-        titulo: formulario.titulo || formulario.titulo_painel || formulario.nome || "",
-        descricao: formulario.descricao || formulario.descricao_painel || "",
-        cargosNotificar: formulario.cargosNotificar || formulario.cargos_notificar || [],
-        canalNotificacaoId: formulario.canalNotificacaoId || formulario.canal_notificacao_id || "",
-      })),
-      respostas: respostas.map((resposta) => ({
-        ...resposta,
-        // Normaliza registros antigos e novos para o formato do editor.
-        itens: Array.isArray(resposta.itens)
-          ? resposta.itens
-          : Array.isArray(resposta.respostas)
-            ? resposta.respostas
-            : [],
-        criadoEm: resposta.criadoEm || resposta.criado_em || resposta.timestamp || 0,
-        formTitulo: resposta.formTitulo || resposta.titulo_painel || resposta.nome || "",
-      })),
+      formularios: formulariosNormalizados,
+      respostas: respostasNormalizadas,
       cargos,
       canais,
     });
