@@ -25,6 +25,7 @@
       <div class="linha-acoes">
         <button class="btn btn-secundario" type="button" onclick="novoForm()">+ Novo formulário</button>
         <button class="btn btn-secundario" type="button" onclick="novoFormularioPadrao()">+ Modelo padrão — Recrutamento Staff</button>
+        <button class="btn btn-secundario" type="button" onclick="novoFormularioParceria()">+ Modelo padrão — Parceria</button>
         <button class="btn btn-primario" type="button" onclick="salvar()">Salvar formulários</button>
       </div>
       <p class="status" id="status"></p>
@@ -125,6 +126,48 @@ function novoFormularioPadrao() {
   });
   desenharEditor();
   avisar('Modelo padrão de Recrutamento Staff adicionado. Revise os cargos e o canal antes de salvar.');
+}
+
+
+function novoFormularioParceria() {
+  const existe = dados.formularios.some((f) =>
+    /parceria/i.test(String(f.titulo || f.titulo_painel || f.nome || ''))
+  );
+  if (existe && !confirm('Já existe um formulário de parceria. Deseja adicionar outro modelo mesmo assim?')) return;
+
+  dados.formularios.push({
+    id: novoId('form'),
+    titulo: '✦・ 𝐍̷Ê𝐌𝐄𝐒𝐈𝐒 — 𝐅𝐎𝐑𝐌𝐔𝐋𝐀́𝐑𝐈𝐎 𝐃𝐄 𝐏𝐀𝐑𝐂𝐄𝐑𝐈𝐀 ・✦',
+    descricao: '⟡・ Este formulário é destinado a comunidades, organizações e projetos interessados em estabelecer uma parceria com a NÊMESIS.\n\n╭─────────────── ◈ ───────────────╮\n🤝・| 𝐎 𝐎𝐁𝐉𝐄𝐓𝐈𝐕𝐎\n╰─────────────── ◈ ───────────────╯\n\nAtravés deste formulário, sua comunidade poderá apresentar sua proposta de colaboração, possibilitando que ambas as partes conheçam seus objetivos e definam uma parceria de forma organizada.\n\n╭─────────────── ◈ ───────────────╮\n🤝・| 𝐏𝐑𝐎𝐏𝐎𝐒𝐓𝐀 𝐃𝐄 𝐂𝐎𝐋𝐀𝐁𝐎𝐑𝐀𝐂̧𝐀̃𝐎\n╰─────────────── ◈ ───────────────╯\n\nBuscamos estabelecer parcerias que proporcionem benefícios mútuos, incentivem a interação entre os membros e ampliem as oportunidades para ambas as organizações. As propostas podem envolver divulgação, integração entre comunidades, eventos conjuntos, iniciativas competitivas e outras formas de colaboração. As condições serão definidas entre os representantes, de acordo com os objetivos e as possibilidades de cada parte.\n\n╭─────────────── ◈ ───────────────╮\n🤝・| 𝐂𝐎𝐌𝐎 𝐅𝐔𝐍𝐂𝐈𝐎𝐍𝐀\n╰─────────────── ◈ ───────────────╯\n\n➜ Preencha todas as informações solicitadas com clareza.\n➜ Apresente os objetivos e os benefícios da parceria proposta.\n➜ Informe as formas de divulgação e colaboração disponíveis.\n➜ Aguarde a análise da equipe responsável pela NÊMESIS.\n➜ Caso a proposta seja aprovada, os representantes poderão alinhar os detalhes e as condições da parceria.\n\n╭─────────────── ◈ ───────────────╮\n⚠️・| 𝐈𝐍𝐅𝐎𝐑𝐌𝐀𝐂̧𝐎̃𝐄𝐒 𝐈𝐌𝐏𝐎𝐑𝐓𝐀𝐍𝐓𝐄𝐒\n╰─────────────── ◈ ───────────────╯\n\n➜ Todas as informações devem ser verdadeiras e estar atualizadas.\n➜ A proposta deve apresentar condições claras e objetivos compatíveis com uma colaboração mútua.\n➜ O envio do formulário não garante a aprovação da parceria.\n➜ A NÊMESIS poderá recusar propostas que não atendam aos critérios estabelecidos pela organização.\n\n╰─────────────── ◈ ───────────────╯\n\n⟡・ Agradecemos pelo interesse em estabelecer uma parceria com a NÊMESIS. Preencha o formulário com atenção para que nossa equipe possa avaliar sua proposta e entrar em contato com o representante responsável.',
+    ativo: true,
+    cargosNotificar: [],
+    canalNotificacaoId: '',
+    paginas: [
+      {
+        titulo: 'Identificação da parceria',
+        perguntas: [
+          { id: novoId('q'), texto: 'Qual é o nome da sua comunidade, organização ou projeto?', tipo: 'curta', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Envie o convite permanente ou o link oficial da sua comunidade/projeto.', tipo: 'curta', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Qual é o seu nome e usuário no Discord?', tipo: 'curta', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Qual cargo ou função você ocupa e tem autorização para representar a organização?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Quantos membros ativos sua comunidade possui atualmente?', tipo: 'curta', obrigatoria: true, opcoes: [] }
+        ]
+      },
+      {
+        titulo: 'Proposta e divulgação',
+        perguntas: [
+          { id: novoId('q'), texto: 'Qual é o principal objetivo da parceria com a NÊMESIS?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'O que sua organização oferece à NÊMESIS e quais benefícios espera receber?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Quais formas de divulgação ou colaboração vocês podem oferecer?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Há requisitos, condições ou regras específicas para manter a parceria? Descreva.', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Envie materiais de divulgação, redes sociais ou outras informações relevantes (se houver).', tipo: 'longa', obrigatoria: false, opcoes: [] },
+          { id: novoId('q'), texto: 'Deseja acrescentar alguma informação à proposta?', tipo: 'longa', obrigatoria: false, opcoes: [] }
+        ]
+      }
+    ]
+  });
+  desenharEditor();
+  avisar('Modelo padrão de Parceria adicionado. Revise os cargos e o canal antes de salvar.');
 }
 
 function desenharEditor() {
