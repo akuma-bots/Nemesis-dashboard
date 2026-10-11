@@ -58,27 +58,26 @@ exports.handler = async (event) => {
 
     // Remove apenas os três formulários antigos solicitados; preserva
     // os modelos atuais de processo seletivo, aliança e ingresso.
-    const titulosLegados = new Set([
-      "formulario staff",
-      "entrar nemesis gangue",
-      "formulario parceria",
-    ]);
     const normalizarTitulo = (valor) =>
       String(valor || "")
-        .normalize("NFD")
+        .normalize("NFKD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, " ")
         .trim();
 
+    const ehFormularioLegado = (formulario) => {
+      const titulo = normalizarTitulo(
+        formulario?.titulo_painel || formulario?.titulo || formulario?.nome
+      );
+      return titulo.includes("staff") ||
+        titulo.includes("parceria") ||
+        (titulo.includes("entrar") && titulo.includes("gangue"));
+    };
+
     const formularios = (Array.isArray(formulariosGuild)
       ? formulariosGuild
-      : []).filter((formulario) => {
-        const titulo = normalizarTitulo(
-          formulario?.titulo_painel || formulario?.titulo || formulario?.nome
-        );
-        return !titulosLegados.has(titulo);
-      });
+      : []).filter((formulario) => !ehFormularioLegado(formulario));
 
     if (formularios.length !== formulariosGuild.length) {
       formulariosDados[GUILD_ID_NEMESIS] = formularios;
