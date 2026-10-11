@@ -111,7 +111,7 @@ exports.handler = async (event) => {
 
         tipos: {
           missao: "Missões",
-          contribuicao: "Contribuições",
+          contribuicao: "Pontuação",
           especial: "Missões Especiais",
         },
 
