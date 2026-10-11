@@ -1,5 +1,45 @@
 const API = "https://discord.com/api/v10";
 
+// Reutiliza as chamadas respeitando o retry_after do Discord em respostas 429.
+// Evita loops longos: quando o Discord pede uma espera acima do limite seguro
+// da função, a resposta 429 segue para o tratamento de erro do chamador.
+async function discordFetch(url, options = {}, maxRetries = 2) {
+  let tentativa = 0;
+
+  while (true) {
+    const resposta = await fetch(url, options);
+
+    if (resposta.status !== 429 || tentativa >= maxRetries) {
+      return resposta;
+    }
+
+    let dados = {};
+    try {
+      dados = await resposta.clone().json();
+    } catch {
+      dados = {};
+    }
+
+    const retryHeader = Number(resposta.headers.get("retry-after"));
+    const retryBody = Number(dados.retry_after);
+    const esperaSegundos =
+      Number.isFinite(retryBody) && retryBody >= 0
+        ? retryBody
+        : retryHeader;
+
+    // Se o prazo não puder ser interpretado ou for longo demais para uma
+    // função serverless, não dispara outra requisição antes da hora.
+    if (!Number.isFinite(esperaSegundos) || esperaSegundos < 0 || esperaSegundos > 7) {
+      return resposta;
+    }
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.ceil(esperaSegundos * 1000) + 100)
+    );
+    tentativa += 1;
+  }
+}
+
 const PERMISSAO_GERENCIAR_SERVIDOR = 0x20n;
 
 /* =========================================================
@@ -17,7 +57,7 @@ async function trocarCodigoPorToken(code) {
       process.env.DISCORD_REDIRECT_URL,
   });
 
-  const resposta = await fetch(`${API}/oauth2/token`, {
+  const resposta = await discordFetch(`${API}/oauth2/token`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -39,7 +79,7 @@ async function trocarCodigoPorToken(code) {
 ========================================================= */
 
 async function buscarUsuario(accessToken) {
-  const resposta = await fetch(`${API}/users/@me`, {
+  const resposta = await discordFetch(`${API}/users/@me`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -59,7 +99,7 @@ async function buscarUsuario(accessToken) {
 ========================================================= */
 
 async function buscarServidoresGerenciaveis(accessToken) {
-  const resposta = await fetch(`${API}/users/@me/guilds`, {
+  const resposta = await discordFetch(`${API}/users/@me/guilds`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -118,7 +158,7 @@ function headersBot() {
  * qual usuário/bot deve ser procurado dentro do servidor.
  */
 async function buscarBot() {
-  const resposta = await fetch(`${API}/users/@me`, {
+  const resposta = await discordFetch(`${API}/users/@me`, {
     headers: headersBot(),
   });
 
@@ -137,15 +177,16 @@ async function buscarBot() {
    Verificação da presença do BOT
 ========================================================= */
 
-async function botEstaNoServidor(guildId) {
+async function botEstaNoServidor(guildId, botConhecido = null) {
   if (!guildId) {
     return false;
   }
 
   /*
-   * Primeiro descobrimos o ID real do bot através do token.
+   * Reutiliza a identidade já consultada pelo chamador quando disponível,
+   * evitando uma chamada /users/@me para cada servidor do usuário.
    */
-  const bot = await buscarBot();
+  const bot = botConhecido || await buscarBot();
 
   if (!bot || !bot.id) {
     throw new Error(
@@ -157,7 +198,7 @@ async function botEstaNoServidor(guildId) {
    * Agora verificamos se esse usuário/bot é membro
    * do servidor específico.
    */
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/members/${bot.id}`,
     {
       headers: headersBot(),
@@ -194,7 +235,7 @@ async function botEstaNoServidor(guildId) {
 ========================================================= */
 
 async function listarCanais(guildId) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/channels`,
     {
       headers: headersBot(),
@@ -215,7 +256,7 @@ async function listarCanais(guildId) {
 ========================================================= */
 
 async function listarCargos(guildId) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/roles`,
     {
       headers: headersBot(),
@@ -236,7 +277,7 @@ async function listarCargos(guildId) {
 ========================================================= */
 
 async function criarCanal(guildId, nome, tipo, extra = {}) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/channels`,
     {
       method: "POST",
@@ -263,7 +304,7 @@ async function criarCanal(guildId, nome, tipo, extra = {}) {
 ========================================================= */
 
 async function apagarCanal(canalId) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/channels/${canalId}`,
     {
       method: "DELETE",
@@ -283,7 +324,7 @@ async function apagarCanal(canalId) {
 ========================================================= */
 
 async function travarConexaoCanal(guildId, canalId) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/channels/${canalId}/permissions/${guildId}`,
     {
       method: "PUT",
@@ -307,7 +348,7 @@ async function travarConexaoCanal(guildId, canalId) {
 ========================================================= */
 
 async function buscarCanal(canalId) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/channels/${canalId}`,
     {
       headers: headersBot(),
@@ -334,7 +375,7 @@ async function enviarEmbed(canalId, embed, components) {
     body.components = components;
   }
 
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/channels/${canalId}/messages`,
     {
       method: "POST",
@@ -384,7 +425,7 @@ async function criarEventoAgendado(
     };
   }
 
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/scheduled-events`,
     {
       method: "POST",
@@ -407,7 +448,7 @@ async function criarEventoAgendado(
 ========================================================= */
 
 async function buscarMembro(guildId, userId) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/members/${userId}`,
     {
       headers: headersBot(),
@@ -422,7 +463,7 @@ async function buscarMembro(guildId, userId) {
 }
 
 async function banirMembro(guildId, userId, motivo) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/bans/${userId}`,
     {
       method: "PUT",
@@ -446,7 +487,7 @@ async function banirMembro(guildId, userId, motivo) {
 }
 
 async function expulsarMembro(guildId, userId, motivo) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/members/${userId}`,
     {
       method: "DELETE",
@@ -476,7 +517,7 @@ async function aplicarTimeout(
     Date.now() + minutos * 60000
   ).toISOString();
 
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/members/${userId}`,
     {
       method: "PATCH",
@@ -500,7 +541,7 @@ async function aplicarTimeout(
 }
 
 async function removerTimeout(guildId, userId) {
-  const resposta = await fetch(
+  const resposta = await discordFetch(
     `${API}/guilds/${guildId}/members/${userId}`,
     {
       method: "PATCH",
