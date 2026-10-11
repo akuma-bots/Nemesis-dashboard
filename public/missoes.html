@@ -15,14 +15,14 @@
 <main class="pagina"><a class="voltar" href="/">← Voltar</a>
 
   <h1>Missões</h1>  <p class="subtitulo">
-    Complete missões, contribua com a NÊMESIS, envie suas provas e conquiste pontos conforme suas atividades forem aprovadas pela equipe.
+    Complete missões, acumule pontuação e envie suas provas para validação pela equipe da NÊMESIS.
   </p>  <p style="margin-top:26px">
     <a class="btn" href="competitivo.html">Ver ranking</a>
   </p>  <!-- MISSÕES -->  <h2 class="secao">Missões</h2>  <div class="grade" id="grade-missoes">
     <div class="cartao">
       <p class="vazio">Carregando…</p>
     </div>
-  </div>  <!-- CONTRIBUIÇÃO -->  <h2 class="secao">Contribuição</h2>  <div class="grade" id="grade-contribuicao">
+  </div>  <!-- PONTUAÇÃO -->  <h2 class="secao">Pontuação</h2>  <div class="grade" id="grade-contribuicao">
     <div class="cartao">
       <p class="vazio">Carregando…</p>
     </div>
@@ -115,7 +115,7 @@ function cartao(m) {
   if (
     m.tipo === 'pve'
   ) {
-    tipoExibicao = 'CONTRIBUIÇÃO';
+    tipoExibicao = 'PONTUAÇÃO';
   }
 
   if (
@@ -152,7 +152,7 @@ function cartao(m) {
     h(
       'span',
       { class: 'pontos' },
-      '+' + (m.pontos || 0) + ' pontos'
+      '+' + (m.pontos || 0) + ' de pontuação'
     ),
 
     h(
@@ -377,7 +377,9 @@ fetch('/.netlify/functions/missoes-get')
         (m) =>
           m.tipo === 'pve' ||
           m.tipo === 'contribuicao' ||
-          m.tipo === 'contribuição'
+          m.tipo === 'contribuição' ||
+          m.tipo === 'pontuacao' ||
+          m.tipo === 'pontuação'
       );
 
 
@@ -407,7 +409,7 @@ fetch('/.netlify/functions/missoes-get')
     preencher(
       '#grade-contribuicao',
       listaContribuicao,
-      'Nenhuma contribuição ativa agora.'
+      'Nenhuma atividade de pontuação ativa agora.'
     );
 
 
