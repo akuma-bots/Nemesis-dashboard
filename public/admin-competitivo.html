@@ -16,7 +16,7 @@
 <main class="pagina" style="max-width:860px">
   <a class="voltar" href="/">← Voltar</a>
   <h1>Editar Competitivo</h1>
-  <p class="sub">Catálogo de pontos e perfis do ranking (pontos, elo, vitórias e derrotas).</p>
+  <p class="sub">Catálogo de pontuação e perfis do ranking (pontuação, Elo, vitórias e derrotas).</p>
 
   <div id="tela-carregando" class="estado-central"><p>Verificando login…</p></div>
 
@@ -37,7 +37,7 @@
   <div id="tela-editor" style="display:none">
 
     <div class="bloco">
-      <h4>CATÁLOGO DE AÇÕES / PONTOS</h4>
+      <h4>CATÁLOGO DE AÇÕES / PONTUAÇÃO</h4>
       <div id="lista-catalogo"></div>
       <div class="linha-acoes">
         <button class="btn btn-secundario" type="button" onclick="adicionarAcao()">+ Adicionar ação</button>
@@ -72,7 +72,7 @@
       <h4>PERFIS NO RANKING</h4>
       <div style="overflow-x:auto">
         <table class="perfis">
-          <thead><tr><th>Nome</th><th>Pontos</th><th>Elo</th><th>V</th><th>D</th><th></th></tr></thead>
+          <thead><tr><th>Nome</th><th>Pontuação</th><th>Elo</th><th>V</th><th>D</th><th></th></tr></thead>
           <tbody id="corpo-perfis"></tbody>
         </table>
       </div>
@@ -159,12 +159,12 @@
         <div class="linha">
           <div class="campo"><label>Nome</label>
             <input type="text" data-i="${i}" data-campo="nome" value="${esc(item.nome)}"></div>
-          <div class="campo"><label>Pontos (negativo = penalidade)</label>
+          <div class="campo"><label>Pontuação (negativo = penalidade)</label>
             <input type="number" data-i="${i}" data-campo="pontos" value="${esc(item.pontos)}"></div>
         </div>
         <div class="campo"><label>Grupo (onde aparece na página)</label>
           <select data-i="${i}" data-campo="grupo">
-            <option value="pontos" ${item.grupo === "pontos" ? "selected" : ""}>Como ganhar pontos</option>
+            <option value="pontos" ${item.grupo === "pontos" ? "selected" : ""}>Como ganhar pontuação</option>
             <option value="bonus" ${item.grupo === "bonus" ? "selected" : ""}>Bônus de atividade</option>
             <option value="penalidade" ${item.grupo === "penalidade" ? "selected" : ""}>Penalidades</option>
           </select></div>
