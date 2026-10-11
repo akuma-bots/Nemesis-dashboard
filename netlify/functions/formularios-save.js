@@ -98,19 +98,19 @@ function normalizarFormularioDashboard(formulario) {
     ),
 
     nome:
-      f.nome ||
       f.titulo ||
+      f.nome ||
       "",
 
     titulo_painel:
-      f.titulo_painel ||
       f.titulo ||
+      f.titulo_painel ||
       f.nome ||
       "",
 
     descricao_painel:
-      f.descricao_painel ||
       f.descricao ||
+      f.descricao_painel ||
       "",
 
     banner_url:
@@ -123,13 +123,13 @@ function normalizarFormularioDashboard(formulario) {
 
     cargos_notificar:
       lista(
-        f.cargos_notificar ||
-          f.cargosNotificar
+        f.cargosNotificar ||
+          f.cargos_notificar
       ).map(String),
 
     canal_notificacao_id:
-      f.canal_notificacao_id ||
       f.canalNotificacaoId ||
+      f.canal_notificacao_id ||
       null,
 
     paginas: lista(
