@@ -10,7 +10,7 @@
 <main class="pagina" style="max-width:860px">
   <a class="voltar" href="/">← Voltar</a>
   <h1>Editar Missões</h1>
-  <p class="sub">Cadastre missões, contribuições e missões especiais e revise os prints enviados como prova.</p>
+  <p class="sub">Cadastre missões, atividades de pontuação e missões especiais; revise as provas enviadas.</p>
 
   <div id="tela-carregando" class="estado-central"><p>Verificando login…</p></div>
   <div id="tela-login" class="estado-central" style="display:none"><p>Entre com Discord para editar.</p><a class="btn btn-primario" href="/login">Entrar com Discord</a></div>
@@ -203,7 +203,7 @@ function blocoMissao(m, i) {
           h(
             'option',
             { value: 'pve' },
-            'Contribuição'
+            'Pontuação'
           ),
 
           h(
@@ -227,7 +227,7 @@ function blocoMissao(m, i) {
     ),
 
     campo(
-      'Pontos',
+      'Pontuação',
       h('input', {
         type: 'number',
         value: String(m.pontos || 0),
@@ -364,7 +364,7 @@ function cartaoPendente(s) {
         s.missaoTitulo +
           ' (+' +
           s.missaoPontos +
-          ' pts)'
+          ' de pontuação)'
       ),
 
       h(
