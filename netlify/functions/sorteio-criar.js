@@ -94,11 +94,12 @@ exports.handler = async (event) => {
 
     if (
       !Number.isInteger(qtdVencedores) ||
-      qtdVencedores <= 0
+      qtdVencedores <= 0 ||
+      qtdVencedores > 100
     ) {
       return resposta(400, {
         ok: false,
-        erro: "A quantidade de vencedores precisa ser maior que 0.",
+        erro: "A quantidade de vencedores precisa ser um número inteiro entre 1 e 100.",
       });
     }
 
@@ -111,17 +112,17 @@ exports.handler = async (event) => {
 
     const descricao = [];
 
-    if (String(texto).trim()) {
+    if (textoLimpo) {
       descricao.push(
-        String(texto).trim(),
+        textoLimpo,
         ""
       );
     }
 
-    if (String(requisitos).trim()) {
+    if (requisitosLimpos) {
       descricao.push(
         "⚠️ **Requisitos:**",
-        String(requisitos).trim(),
+        requisitosLimpos,
         ""
       );
     }
@@ -152,9 +153,9 @@ exports.handler = async (event) => {
       timestamp: new Date().toISOString(),
     };
 
-    if (String(banner).trim()) {
+    if (bannerLimpo) {
       embed.image = {
-        url: String(banner).trim(),
+        url: bannerLimpo,
       };
     }
 
