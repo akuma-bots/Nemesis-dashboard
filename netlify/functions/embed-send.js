@@ -31,26 +31,58 @@ exports.handler = async (event) => {
   }
 
   const tituloLimpo = typeof titulo === "string" ? titulo.trim().slice(0, 256) : "";
-  const descricaoLimpa = typeof descricao === "string" ? descricao.trim().slice(0, 4000) : "";
+  const descricaoLimpa = typeof descricao === "string" ? descricao.trim() : "";
   const rodapeLimpo = typeof rodape === "string" ? rodape.trim().slice(0, 2048) : "";
-  const embed = {
-    title: tituloLimpo || undefined,
-    description: descricaoLimpa || undefined,
-    color: corHex,
-    image: imagem ? { url: String(imagem).trim() } : undefined,
-    footer: rodapeLimpo ? { text: rodapeLimpo } : undefined,
-  };
 
+  if (descricaoLimpa.length > 20000) {
+    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "A descrição pode ter no máximo 20.000 caracteres." }) };
+  }
+
+  // O Discord limita a descrição de cada embed a 4.096 caracteres.
+  // Textos longos são divididos em mensagens sequenciais, sem truncar o conteúdo.
+  function dividirDescricao(texto, limite = 4000) {
+    if (!texto) return [""];
+    const partes = [];
+    let restante = texto;
+    while (restante.length > limite) {
+      let corte = restante.lastIndexOf("\n", limite);
+      if (corte < Math.floor(limite * 0.6)) corte = restante.lastIndexOf(" ", limite);
+      if (corte < Math.floor(limite * 0.6)) corte = limite;
+      partes.push(restante.slice(0, corte));
+      restante = restante.slice(corte);
+      if (restante.startsWith("\n") || restante.startsWith(" ")) restante = restante.slice(1);
+    }
+    if (restante.length || !partes.length) partes.push(restante);
+    return partes;
+  }
+
+  const partesDescricao = dividirDescricao(descricaoLimpa);
   const botoes = [];
   if (botao1Texto && botao1Url) botoes.push({ type: 2, style: 5, label: botao1Texto.slice(0, 80), url: botao1Url });
   if (botao2Texto && botao2Url) botoes.push({ type: 2, style: 5, label: botao2Texto.slice(0, 80), url: botao2Url });
   const components = botoes.length ? [{ type: 1, components: botoes }] : undefined;
 
   try {
-    await enviarEmbed(canalId, embed, components);
+    for (let i = 0; i < partesDescricao.length; i++) {
+      const tituloParte = i === 0
+        ? tituloLimpo
+        : (tituloLimpo ? `${tituloLimpo.slice(0, 240)} — continuação ${i + 1}/${partesDescricao.length}` : `Continuação ${i + 1}/${partesDescricao.length}`);
+      const embed = {
+        title: tituloParte || undefined,
+        description: partesDescricao[i] || undefined,
+        color: corHex,
+        image: i === 0 && imagem ? { url: String(imagem).trim() } : undefined,
+        footer: i === 0 && rodapeLimpo ? { text: rodapeLimpo } : undefined,
+      };
+      await enviarEmbed(canalId, embed, i === 0 ? components : undefined);
+    }
   } catch (e) {
     return { statusCode: 500, body: JSON.stringify({ erro: e.message }) };
   }
 
-  return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: true }) };
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ok: true, mensagens: partesDescricao.length, caracteres: descricaoLimpa.length })
+  };
 };
