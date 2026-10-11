@@ -65,8 +65,10 @@ function alternar(lista, valor, ligado) {
 function campo(rotulo, entrada) { return h('div', { class: 'campo' }, h('label', {}, rotulo), entrada); }
 
 function normalizar(f) {
-  f.cargosNotificar = f.cargosNotificar || [];
-  f.canalNotificacaoId = f.canalNotificacaoId || '';
+  f.titulo = f.titulo || f.titulo_painel || f.nome || '';
+  f.descricao = f.descricao || f.descricao_painel || '';
+  f.cargosNotificar = f.cargosNotificar || f.cargos_notificar || [];
+  f.canalNotificacaoId = f.canalNotificacaoId || f.canal_notificacao_id || '';
   f.paginas = f.paginas || [];
   f.paginas.forEach((p) => { p.perguntas = p.perguntas || []; p.perguntas.forEach((q) => { q.opcoes = q.opcoes || []; }); });
 }
