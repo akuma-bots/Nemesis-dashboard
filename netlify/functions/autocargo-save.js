@@ -5,9 +5,18 @@ const { comPadrao } = require("./lib/config-padrao");
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
-  const { guildId, canalId, cargoId, acao } = JSON.parse(event.body || "{}");
+  let corpo;
+  try { corpo = JSON.parse(event.body || "{}"); }
+  catch { return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "JSON inválido." }) }; }
+  const { guildId, canalId, cargoId, acao } = corpo;
   const { erro } = await exigirGerenciaServidor(event, guildId);
   if (erro) return erro;
+  if (!/^\d{17,20}$/.test(String(canalId || ""))) {
+    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "canalId inválido." }) };
+  }
+  if (acao !== "remover" && !/^\d{17,20}$/.test(String(cargoId || ""))) {
+    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "cargoId inválido." }) };
+  }
 
   const configs = await carregarBlob("guild_configs.json", {});
   const atual = comPadrao(configs[guildId]);
