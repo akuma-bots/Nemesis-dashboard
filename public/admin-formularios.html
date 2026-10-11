@@ -24,6 +24,7 @@
       <div id="editor-forms"></div>
       <div class="linha-acoes">
         <button class="btn btn-secundario" type="button" onclick="novoForm()">+ Novo formulário</button>
+        <button class="btn btn-secundario" type="button" onclick="novoFormularioPadrao()">+ Modelo padrão — Recrutamento Staff</button>
         <button class="btn btn-primario" type="button" onclick="salvar()">Salvar formulários</button>
       </div>
       <p class="status" id="status"></p>
@@ -86,6 +87,44 @@ async function iniciar() {
 function novoForm() {
   dados.formularios.push({ id: novoId('form'), titulo: 'Novo formulário', descricao: '', ativo: false, cargosNotificar: [], canalNotificacaoId: '', paginas: [{ titulo: 'Etapa 1', perguntas: [] }] });
   desenharEditor();
+}
+
+function novoFormularioPadrao() {
+  const existe = dados.formularios.some((f) =>
+    String(f.titulo || f.titulo_painel || f.nome || '').toLowerCase() === 'recrutamento staff'
+  );
+  if (existe && !confirm('Já existe um formulário chamado Recrutamento Staff. Deseja adicionar outro modelo mesmo assim?')) return;
+
+  dados.formularios.push({
+    id: novoId('form'),
+    titulo: '✦・ 𝐍̷Ê𝐌𝐄𝐒𝐈𝐒 — 𝐑𝐄𝐂𝐑𝐔𝐓𝐀𝐌𝐄𝐍𝐓𝐎 𝐒𝐓𝐀𝐅𝐅 ・✦',
+    descricao: '⟡・ A NÊMESIS está recrutando novos integrantes para sua equipe administrativa. Procuramos pessoas responsáveis, maduras e comprometidas, dispostas a contribuir para a organização, o crescimento e o desenvolvimento da gangue.\\n\\n╭─────────────── ◈ ───────────────╮\\n\\n⚔️・| 𝐎 𝐐𝐔𝐄 𝐏𝐑𝐎𝐂𝐔𝐑𝐀𝐌𝐎𝐒\\n➜ Responsabilidade, maturidade e postura;\\n➜ Comunicação clara e respeitosa;\\n➜ Atividade e participação consistente;\\n➜ Capacidade de trabalhar em equipe;\\n➜ Imparcialidade na resolução de conflitos;\\n➜ Compromisso com as funções assumidas;\\n➜ Respeito às regras, à hierarquia e às decisões administrativas;\\n➜ Iniciativa para identificar problemas e propor soluções.\\n\\n╭─────────────── ◈ ───────────────╮\\n\\n⚔️・| 𝐒𝐎𝐁𝐑𝐄 𝐎 𝐑𝐄𝐂𝐑𝐔𝐓𝐀𝐌𝐄𝐍𝐓𝐎\\nA seleção avaliará seu perfil, sua disponibilidade, sua experiência e sua capacidade de contribuir com a equipe. Experiência anterior pode ajudar, mas responsabilidade, honestidade e vontade de evoluir também serão consideradas.\\n\\n╭─────────────── ◈ ───────────────╮\\n\\n⚠️・| 𝐈𝐌𝐏𝐎𝐑𝐓𝐀𝐍𝐓𝐄\\nResponda a todas as perguntas com atenção, sinceridade e informações completas. Inscrições incompletas, falsas ou feitas sem comprometimento poderão ser desconsideradas. O envio do formulário não garante aprovação. Os candidatos selecionados serão avaliados pela administração da NÊMESIS.\\n\\n╰─────────────── ◈ ───────────────╯\\n\\n⟡・ Se você está preparado para assumir responsabilidades, colaborar com a equipe e ajudar a fortalecer a NÊMESIS, envie sua candidatura pelo botão abaixo.',
+    ativo: true,
+    cargosNotificar: [],
+    canalNotificacaoId: '',
+    paginas: [
+      {
+        titulo: 'Perfil do candidato',
+        perguntas: [
+          { id: novoId('q'), texto: 'Como prefere ser chamado e qual é seu usuário no Discord?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Qual é sua disponibilidade para atuar na equipe?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Por que deseja fazer parte da Staff da NÊMESIS?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Você já teve experiência em equipes administrativas? Se sim, descreva.', tipo: 'longa', obrigatoria: true, opcoes: [] }
+        ]
+      },
+      {
+        titulo: 'Responsabilidade e conduta',
+        perguntas: [
+          { id: novoId('q'), texto: 'Como agiria diante de um conflito entre dois membros?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'O que faria se outro integrante da Staff desrespeitasse as regras?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Quais habilidades você pode oferecer à NÊMESIS?', tipo: 'longa', obrigatoria: true, opcoes: [] },
+          { id: novoId('q'), texto: 'Você compreende que o cargo exige imparcialidade, discrição e compromisso?', tipo: 'escolha', obrigatoria: true, opcoes: ['Sim, compreendo e aceito', 'Preciso esclarecer algumas dúvidas'] }
+        ]
+      }
+    ]
+  });
+  desenharEditor();
+  avisar('Modelo padrão de Recrutamento Staff adicionado. Revise os cargos e o canal antes de salvar.');
 }
 
 function desenharEditor() {
