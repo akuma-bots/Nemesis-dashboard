@@ -216,14 +216,23 @@ function blocoMissao(m, i) {
     ),
 
     campo(
-      'Descrição',
-      h('textarea', {
-        rows: '2',
-        value: m.descricao || '',
-        oninput: (e) => {
-          m.descricao = e.target.value;
-        }
-      })
+      'Descrição (até 20.000 caracteres)',
+      h('div', { class: 'campo-descricao-missao' },
+        h('textarea', {
+          rows: '5',
+          maxlength: '20000',
+          value: m.descricao || '',
+          oninput: (e) => {
+            m.descricao = e.target.value.slice(0, 20000);
+            e.target.value = m.descricao;
+            const contador = e.target.parentElement.querySelector('[data-contador-descricao]');
+            if (contador) contador.textContent = m.descricao.length.toLocaleString('pt-BR') + ' / 20.000 caracteres';
+          }
+        }),
+        h('small', { 'data-contador-descricao': 'true', class: 'texto-suave' },
+          (m.descricao || '').length.toLocaleString('pt-BR') + ' / 20.000 caracteres'
+        )
+      )
     ),
 
     campo(
