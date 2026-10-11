@@ -23,4 +23,12 @@ async function salvarBlob(nomeArquivo, dados) {
   await comandoRedis("SET", nomeArquivo, JSON.stringify(dados));
 }
 
-module.exports = { carregarBlob, salvarBlob };
+async function verificarConexao() {
+  const resultado = await comandoRedis("PING");
+  if (String(resultado).toUpperCase() !== "PONG") {
+    throw new Error("O Upstash não confirmou a conexão.");
+  }
+  return true;
+}
+
+module.exports = { carregarBlob, salvarBlob, verificarConexao };
