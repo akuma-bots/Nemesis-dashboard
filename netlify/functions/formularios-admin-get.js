@@ -135,7 +135,17 @@ exports.handler = async (event) => {
         cargosNotificar: formulario.cargosNotificar || formulario.cargos_notificar || [],
         canalNotificacaoId: formulario.canalNotificacaoId || formulario.canal_notificacao_id || "",
       })),
-      respostas,
+      respostas: respostas.map((resposta) => ({
+        ...resposta,
+        // Normaliza registros antigos e novos para o formato do editor.
+        itens: Array.isArray(resposta.itens)
+          ? resposta.itens
+          : Array.isArray(resposta.respostas)
+            ? resposta.respostas
+            : [],
+        criadoEm: resposta.criadoEm || resposta.criado_em || resposta.timestamp || 0,
+        formTitulo: resposta.formTitulo || resposta.titulo_painel || resposta.nome || "",
+      })),
       cargos,
       canais,
     });
