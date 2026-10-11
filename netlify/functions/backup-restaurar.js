@@ -7,30 +7,51 @@ const ARQUIVOS_COM_DADOS = [
   "roblox_grupo_config.json", "modmail_canais.json",
 ];
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+const json = (statusCode, corpo) => ({
+  statusCode,
+  headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  body: JSON.stringify(corpo),
+});
 
-  const { guildId, dados } = JSON.parse(event.body || "{}");
+exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") return json(405, { erro: "Método não permitido." });
+
+  let corpo;
+  try { corpo = JSON.parse(event.body || "{}"); }
+  catch { return json(400, { erro: "JSON inválido." }); }
+
+  const guildId = String(corpo.guildId || "").trim();
+  const dados = corpo.dados;
   const { erro } = await exigirGerenciaServidor(event, guildId);
   if (erro) return erro;
 
-  if (!dados || typeof dados !== "object") {
-    return { statusCode: 400, body: JSON.stringify({ erro: "Arquivo de backup inválido." }) };
+  if (!dados || typeof dados !== "object" || Array.isArray(dados)) {
+    return json(400, { erro: "Arquivo de backup inválido." });
   }
 
   const restaurados = [];
-  for (const nomeArquivo of Object.keys(dados)) {
-    if (!ARQUIVOS_COM_DADOS.includes(nomeArquivo)) continue;
-
-    const todos = await carregarBlob(nomeArquivo, {});
-    todos[guildId] = dados[nomeArquivo];
-    await salvarBlob(nomeArquivo, todos);
-    restaurados.push(nomeArquivo);
+  try {
+    for (const nomeArquivo of Object.keys(dados)) {
+      if (!ARQUIVOS_COM_DADOS.includes(nomeArquivo)) continue;
+      const todosOriginais = await carregarBlob(nomeArquivo, {});
+      const todos = todosOriginais && typeof todosOriginais === "object" && !Array.isArray(todosOriginais)
+        ? todosOriginais
+        : {};
+      todos[guildId] = dados[nomeArquivo];
+      await salvarBlob(nomeArquivo, todos);
+      restaurados.push(nomeArquivo);
+    }
+  } catch (erroRestauro) {
+    console.error("[BACKUP-RESTAURAR]", erroRestauro);
+    return json(500, {
+      erro: "A restauração foi interrompida. Confira os dados e tente novamente; os arquivos já listados podem ter sido restaurados.",
+      restaurados,
+    });
   }
 
   if (!restaurados.length) {
-    return { statusCode: 400, body: JSON.stringify({ erro: "O arquivo não tinha nenhum dado reconhecido pra restaurar." }) };
+    return json(400, { erro: "O arquivo não tinha nenhum dado reconhecido para restaurar." });
   }
 
-  return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: true, restaurados }) };
+  return json(200, { ok: true, restaurados });
 };
