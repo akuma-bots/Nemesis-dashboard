@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const { exigirGerenciaServidor } = require("./lib/autorizar");
 const { carregarBlob, salvarBlob } = require("./lib/upstash");
-const { enviarEmbed } = require("./lib/discord");
+const { enviarEmbed, buscarCanal } = require("./lib/discord");
 
 function resposta(statusCode, dados) {
   return {
@@ -22,7 +22,12 @@ exports.handler = async (event) => {
   }
 
   try {
-    const corpo = JSON.parse(event.body || "{}");
+    let corpo;
+    try {
+      corpo = JSON.parse(event.body || "{}");
+    } catch {
+      return resposta(400, { ok: false, erro: "JSON inválido." });
+    }
 
     const {
       guildId,
@@ -50,6 +55,27 @@ exports.handler = async (event) => {
         ok: false,
         erro: "Canal e prêmio são obrigatórios.",
       });
+    }
+
+    const premioLimpo = String(premio).trim().slice(0, 200);
+    const textoLimpo = String(texto || "").trim().slice(0, 1200);
+    const requisitosLimpos = String(requisitos || "").trim().slice(0, 1200);
+    const bannerLimpo = String(banner || "").trim();
+
+    if (!premioLimpo) {
+      return resposta(400, { ok: false, erro: "O prêmio não pode estar vazio." });
+    }
+    if (bannerLimpo && !/^https?:\/\//i.test(bannerLimpo)) {
+      return resposta(400, { ok: false, erro: "O banner precisa ser uma URL HTTP ou HTTPS." });
+    }
+    if (!/^\d{17,20}$/.test(String(canalId))) {
+      return resposta(400, { ok: false, erro: "ID do canal inválido." });
+    }
+
+    // A autorização do usuário não deve permitir publicar em canais de outro servidor.
+    const canalDestino = await buscarCanal(String(canalId));
+    if (!canalDestino || String(canalDestino.guild_id) !== String(guildId)) {
+      return resposta(400, { ok: false, erro: "O canal selecionado não pertence ao servidor autorizado." });
     }
 
     if (!Number.isFinite(minutos) || minutos <= 0) {
@@ -102,7 +128,7 @@ exports.handler = async (event) => {
 
     descricao.push(
       "🎁 **Prêmio:**",
-      String(premio).trim(),
+      premioLimpo,
       "",
       "🏆 **Vencedores:**",
       `**${qtdVencedores}**`,
@@ -191,7 +217,7 @@ exports.handler = async (event) => {
       ).trim(),
 
       banner:
-        String(banner || "").trim() ||
+        bannerLimpo ||
         null,
 
       fim,
