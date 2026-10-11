@@ -6,7 +6,10 @@ const { enviarEmbed } = require("./lib/discord");
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
-  const { guildId, gangueA, gangueB, quando } = JSON.parse(event.body || "{}");
+  let corpo;
+  try { corpo = JSON.parse(event.body || "{}"); }
+  catch { return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "JSON inválido." }) }; }
+  const { guildId, gangueA, gangueB, quando } = corpo;
   const { erro } = await exigirGerenciaServidor(event, guildId);
   if (erro) return erro;
 
@@ -21,11 +24,17 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ erro: "Configure o canal de eventos na aba Geral primeiro." }) };
   }
 
+  const ladoA = String(gangueA).trim().slice(0, 100);
+  const ladoB = String(gangueB).trim().slice(0, 100);
+  const quandoLimpo = String(quando).trim().slice(0, 200);
+  if (!ladoA || !ladoB || !quandoLimpo) {
+    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "Informe nomes válidos para as duas gangues e o horário." }) };
+  }
   const embed = {
     title: "⚔️ Guerra agendada!",
-    description: `**${gangueA}** vs **${gangueB}**`,
+    description: `**${ladoA}** vs **${ladoB}**`,
     color: 0xed4245,
-    fields: [{ name: "Quando", value: quando }],
+    fields: [{ name: "Quando", value: quandoLimpo }],
   };
   await enviarEmbed(canalId, embed);
 
