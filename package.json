@@ -7,6 +7,6 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "node -e \"console.log('NÊMESIS Dashboard — build concluído.')\""
+    "build": "node scripts/validate.js"
   }
 }
