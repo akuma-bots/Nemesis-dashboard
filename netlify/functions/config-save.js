@@ -1,54 +1,19 @@
-const { exigirGerenciaServidor } = require("./lib/autorizar");
+const {
+  autenticar,
+  eGerente,
+  respostaNaoAutorizado,
+} = require("./lib/auth");
+
 const {
   carregarBlob,
   salvarBlob,
 } = require("./lib/upstash");
-const { comPadrao } = require("./lib/config-padrao");
 
-const CAMPOS_PERMITIDOS = [
-  // Configuração geral
-  "support_role_id",
-  "log_channel_id",
-  "ticket_category_id",
-  "canal_eventos_id",
-  "canal_parcerias_id",
-  "canal_denuncias_id",
-  "categoria_modmail_id",
-  "cargo_categoria_parcerias_id",
-  "canal_auditoria_id",
-  "canal_guerras_id",
+const {
+  comPadrao,
+} = require("./lib/config-padrao");
 
-  // Competitivo
-  "canal_desafios_id",
-  "desafio_cooldown_minutos",
-  "canal_lutas_id",
-  "canal_provas_pvp_id",
-  "canal_ranking_id",
-
-  // Missões
-  "canal_missoes_missao_id",
-  "canal_provas_missao_id",
-
-  // Contribuições
-  "canal_missoes_contribuicao_id",
-  "canal_provas_contribuicao_id",
-
-  // Missões especiais
-  "canal_missoes_especial_id",
-  "canal_provas_especial_id",
-
-  // Recordes
-  "canal_recordes_id",
-
-  // Painel de tickets
-  "ticket_painel_titulo",
-  "ticket_painel_descricao",
-  "ticket_painel_banner_url",
-
-  // Permissões de moderação
-  "cargos_moderacao_total",
-  "cargos_moderacao_basico",
-];
+const GUILD_ID = "1543381737961160910";
 
 const CAMPOS_ID = new Set([
   "support_role_id",
@@ -72,6 +37,24 @@ const CAMPOS_ID = new Set([
   "canal_missoes_especial_id",
   "canal_provas_especial_id",
   "canal_recordes_id",
+]);
+
+const CAMPOS_LISTA = new Set([
+  "cargos_moderacao_total",
+  "cargos_moderacao_basico",
+]);
+
+const CAMPOS_TEXTO = new Set([
+  "ticket_painel_titulo",
+  "ticket_painel_descricao",
+  "ticket_painel_banner_url",
+]);
+
+const CAMPOS_PERMITIDOS = new Set([
+  ...CAMPOS_ID,
+  ...CAMPOS_LISTA,
+  ...CAMPOS_TEXTO,
+  "desafio_cooldown_minutos",
 ]);
 
 function resposta(statusCode, dados) {
@@ -100,27 +83,41 @@ exports.handler = async (event) => {
   } catch {
     return resposta(400, {
       ok: false,
-      erro: "O corpo da requisição não contém JSON válido.",
+      erro: "JSON inválido.",
     });
   }
 
-  const guildId = String(corpo.guildId || "").trim();
+  const guildId = String(
+    corpo.guildId || ""
+  ).trim();
 
-  if (!guildId) {
+  if (guildId !== GUILD_ID) {
     return resposta(400, {
       ok: false,
-      erro: "guildId é obrigatório.",
+      erro: "Servidor da NÊMESIS inválido.",
     });
   }
 
   try {
-    const { erro } = await exigirGerenciaServidor(
-      event,
-      guildId
-    );
+    const usuario = await autenticar(event);
 
-    if (erro) {
-      return erro;
+    if (!usuario || !eGerente(usuario)) {
+      return respostaNaoAutorizado();
+    }
+
+    const camposRecebidos = Object.keys(corpo)
+      .filter((campo) => campo !== "guildId");
+
+    if (
+      camposRecebidos.length === 0 ||
+      camposRecebidos.some(
+        (campo) => !CAMPOS_PERMITIDOS.has(campo)
+      )
+    ) {
+      return resposta(400, {
+        ok: false,
+        erro: "A requisição contém campos inválidos ou nenhum campo para salvar.",
+      });
     }
 
     const configs = await carregarBlob(
@@ -128,13 +125,11 @@ exports.handler = async (event) => {
       {}
     );
 
-    const atual = comPadrao(configs[guildId]);
+    const atual = comPadrao(
+      configs[guildId]
+    );
 
-    for (const campo of CAMPOS_PERMITIDOS) {
-      if (!Object.prototype.hasOwnProperty.call(corpo, campo)) {
-        continue;
-      }
-
+    for (const campo of camposRecebidos) {
       const valor = corpo[campo];
 
       if (CAMPOS_ID.has(campo)) {
@@ -145,7 +140,7 @@ exports.handler = async (event) => {
 
         const id = String(valor).trim();
 
-        if (!/^\d+$/.test(id)) {
+        if (!/^\d{17,20}$/.test(id)) {
           return resposta(400, {
             ok: false,
             erro: `O campo ${campo} precisa conter um ID válido do Discord.`,
@@ -156,10 +151,7 @@ exports.handler = async (event) => {
         continue;
       }
 
-      if (
-        campo === "cargos_moderacao_total" ||
-        campo === "cargos_moderacao_basico"
-      ) {
+      if (CAMPOS_LISTA.has(campo)) {
         if (!Array.isArray(valor)) {
           return resposta(400, {
             ok: false,
@@ -167,10 +159,18 @@ exports.handler = async (event) => {
           });
         }
 
-        atual[campo] = valor
-          .filter((item) => /^\d+$/.test(String(item)))
-          .map(String);
+        if (
+          valor.some(
+            (item) => !/^\d{17,20}$/.test(String(item))
+          )
+        ) {
+          return resposta(400, {
+            ok: false,
+            erro: `A lista ${campo} contém um ID inválido.`,
+          });
+        }
 
+        atual[campo] = valor.map(String);
         continue;
       }
 
@@ -184,7 +184,7 @@ exports.handler = async (event) => {
         ) {
           return resposta(400, {
             ok: false,
-            erro: "O intervalo dos desafios precisa ser um número entre 0 e 10080 minutos.",
+            erro: "O intervalo dos desafios deve ficar entre 0 e 10080 minutos.",
           });
         }
 
@@ -192,18 +192,43 @@ exports.handler = async (event) => {
         continue;
       }
 
-      if (
-        campo === "ticket_painel_titulo" ||
-        campo === "ticket_painel_descricao" ||
-        campo === "ticket_painel_banner_url"
-      ) {
+      if (CAMPOS_TEXTO.has(campo)) {
+        if (
+          valor !== null &&
+          typeof valor !== "string"
+        ) {
+          return resposta(400, {
+            ok: false,
+            erro: `O campo ${campo} precisa ser texto.`,
+          });
+        }
+
+        if (
+          campo === "ticket_painel_banner_url" &&
+          valor
+        ) {
+          try {
+            const url = new URL(valor);
+
+            if (
+              url.protocol !== "https:" &&
+              url.protocol !== "http:"
+            ) {
+              throw new Error("URL inválida");
+            }
+          } catch {
+            return resposta(400, {
+              ok: false,
+              erro: "O banner precisa conter uma URL HTTP ou HTTPS válida.",
+            });
+          }
+        }
+
         atual[campo] =
-          valor === null ? null : String(valor);
+          valor === null ? null : valor.trim();
 
         continue;
       }
-
-      atual[campo] = valor;
     }
 
     configs[guildId] = atual;
@@ -215,10 +240,14 @@ exports.handler = async (event) => {
 
     return resposta(200, {
       ok: true,
+      mensagem: "Configurações salvas.",
       config: atual,
     });
   } catch (erro) {
-    console.error("[CONFIG-SAVE]", erro);
+    console.error(
+      "[CONFIG-SAVE]",
+      erro
+    );
 
     return resposta(500, {
       ok: false,
