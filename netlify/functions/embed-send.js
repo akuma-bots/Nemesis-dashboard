@@ -4,9 +4,20 @@ const { buscarCanal, enviarEmbed } = require("./lib/discord");
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
-  const { guildId, canalId, titulo, descricao, cor, imagem, rodape, botao1Texto, botao1Url, botao2Texto, botao2Url } = JSON.parse(event.body || "{}");
+  let corpo;
+  try { corpo = JSON.parse(event.body || "{}"); }
+  catch { return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "JSON inválido." }) }; }
+  const { guildId, canalId, titulo, descricao, cor, imagem, rodape, botao1Texto, botao1Url, botao2Texto, botao2Url } = corpo;
   const { erro } = await exigirGerenciaServidor(event, guildId);
   if (erro) return erro;
+  if (!/^\d{17,20}$/.test(String(canalId || ""))) {
+    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: "canalId inválido." }) };
+  }
+  for (const [nome, url] of [["imagem", imagem], ["botao1Url", botao1Url], ["botao2Url", botao2Url]]) {
+    if (url && !/^https?:\/\//i.test(String(url).trim())) {
+      return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ erro: `${nome} precisa ser uma URL HTTP ou HTTPS.` }) };
+    }
+  }
 
   const canal = await buscarCanal(canalId);
   if (!canal || canal.guild_id !== guildId) {
@@ -19,12 +30,15 @@ exports.handler = async (event) => {
     if (!Number.isNaN(parsed)) corHex = parsed;
   }
 
+  const tituloLimpo = typeof titulo === "string" ? titulo.trim().slice(0, 256) : "";
+  const descricaoLimpa = typeof descricao === "string" ? descricao.trim().slice(0, 4000) : "";
+  const rodapeLimpo = typeof rodape === "string" ? rodape.trim().slice(0, 2048) : "";
   const embed = {
-    title: titulo || undefined,
-    description: descricao || undefined,
+    title: tituloLimpo || undefined,
+    description: descricaoLimpa || undefined,
     color: corHex,
-    image: imagem ? { url: imagem } : undefined,
-    footer: rodape ? { text: rodape } : undefined,
+    image: imagem ? { url: String(imagem).trim() } : undefined,
+    footer: rodapeLimpo ? { text: rodapeLimpo } : undefined,
   };
 
   const botoes = [];
