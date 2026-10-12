@@ -104,6 +104,20 @@
     fetch('/.netlify/functions/competitivo-get')
       .then(r => r.json())
       .then(d => {
+        const historicoEl = document.getElementById('historico-temporadas');
+        if (historicoEl && d.temporada) {
+          const historico = Array.isArray(d.temporada.historico) ? [...d.temporada.historico].reverse() : [];
+          historicoEl.innerHTML = historico.length ? historico.slice(0, 6).map(t => {
+            const top = Array.isArray(t.top) ? t.top.slice(0, 3) : [];
+            const linhas = top.map((m, i) => {
+              const medalha = ['🥇', '🥈', '🥉'][i] || '•';
+              return `<div style="margin-top:6px;font-family:'Rajdhani',sans-serif;">${medalha} ${escaparHtml(m.nome || m.discordId)} — ${Number(m.pontos || 0).toLocaleString('pt-BR')} pts</div>`;
+            }).join('');
+            const fim = t.fim_timestamp ? new Date(t.fim_timestamp * 1000).toLocaleDateString('pt-BR') : '';
+            return `<div class="item-catalogo" style="display:block;"><div class="nome">TEMPORADA #${Number(t.numero || 0)} <span style="color:var(--steel);font-family:'Rajdhani',sans-serif;">${escaparHtml(fim)}</span></div>${linhas || '<div class="vazio">Sem pontuação registrada.</div>'}</div>`;
+          }).join('') : '<p class="vazio">Nenhuma temporada encerrada ainda.</p>';
+        }
+
         if(primeiraVez){
           const grupos = { pontos: 'catalogo-pontos', bonus: 'catalogo-bonus', penalidade: 'catalogo-penalidade' };
           Object.values(grupos).forEach(id => document.getElementById(id).innerHTML = '');
