@@ -151,8 +151,24 @@
     <div class="grade-estatisticas">
 
       <div class="estatistica">
-        <span class="nome">Pontuação</span>
+        <span class="nome">Pontos da temporada</span>
         <span class="valor" id="pontos">0</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">XP</span>
+        <span class="valor" id="xp">0</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Tempo no Top 10</span>
+        <span class="valor" id="tempoTopGlobal">0min</span>
+      </div>
+
+      <div class="estatistica">
+        <span class="nome">Temporada atual</span>
+        <span class="valor" id="temporadaGlobal">#1</span>
+        <small id="temporadaRestante" style="color:var(--muted)">—</small>
       </div>
 
       <div class="estatistica">
@@ -417,6 +433,26 @@ function preencherPerfil(dados) {
 
   $('#pontos').textContent =
     pontos.toLocaleString('pt-BR');
+
+  const xp = numero(estatisticas.xp ?? usuario.xp);
+  $('#xp').textContent = xp.toLocaleString('pt-BR');
+
+  const tempoTop = Math.max(0, numero(estatisticas.tempoTopGlobal ?? usuario.tempoTopGlobal));
+  const totalMinutosTop = Math.floor(tempoTop / 60);
+  const diasTop = Math.floor(totalMinutosTop / 1440);
+  const horasTop = Math.floor((totalMinutosTop % 1440) / 60);
+  const minutosTop = totalMinutosTop % 60;
+  $('#tempoTopGlobal').textContent = diasTop > 0
+    ? `${diasTop}d ${horasTop}h`
+    : horasTop > 0 ? `${horasTop}h ${minutosTop}min` : `${minutosTop}min`;
+
+  const temporada = estatisticas.temporada || usuario.temporada || {};
+  $('#temporadaGlobal').textContent = '#' + numero(temporada.numero || 1);
+  const restante = Math.max(0, numero(temporada.segundosRestantes));
+  const diasRestantes = Math.floor(restante / 86400);
+  const horasRestantes = Math.floor((restante % 86400) / 3600);
+  const minutosRestantes = Math.floor((restante % 3600) / 60);
+  $('#temporadaRestante').textContent = `Reinicia em ${diasRestantes}d ${horasRestantes}h ${minutosRestantes}min`;
 
   $('#vitorias').textContent =
     vitorias.toLocaleString('pt-BR');
