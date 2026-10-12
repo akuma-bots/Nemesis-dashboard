@@ -228,7 +228,22 @@ function blocoForm(f, fi) {
 
   return h('div', { class: 'bloco', style: 'background:var(--void)' },
     campo('Título', h('input', { type: 'text', value: f.titulo, oninput: (e) => { f.titulo = e.target.value; } })),
-    campo('Descrição', h('textarea', { rows: '2', value: f.descricao, oninput: (e) => { f.descricao = e.target.value; } })),
+    campo('Descrição do painel (até 20.000 caracteres)', h('div', { class: 'campo-descricao-formulario' },
+      h('textarea', {
+        rows: '6',
+        maxlength: '20000',
+        value: f.descricao,
+        oninput: (e) => {
+          f.descricao = e.target.value.slice(0, 20000);
+          e.target.value = f.descricao;
+          const contador = e.target.parentElement.querySelector('[data-contador-descricao-form]');
+          if (contador) contador.textContent = f.descricao.length.toLocaleString('pt-BR') + ' / 20.000 caracteres';
+        }
+      }),
+      h('small', { 'data-contador-descricao-form': 'true', class: 'texto-suave' },
+        f.descricao.length.toLocaleString('pt-BR') + ' / 20.000 caracteres'
+      )
+    )),
     h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: f.ativo, onchange: (e) => { f.ativo = e.target.checked; } }), 'Formulário aberto (visível no site)'),
     campo('Cargos que recebem DM a cada candidatura', cargos),
     campo('Canal de aviso (opcional — também marca os cargos acima)', canais),
