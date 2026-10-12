@@ -97,8 +97,21 @@ exports.handler = async function (event) {
           String(discordId)
       ) || {};
 
-    const pontos =
+    const pontosTotais =
       Number(perfil.pontos || 0);
+    const pontos =
+      Number(perfil.pontos_temporada ?? perfil.pontos ?? 0);
+    const xp = Number(perfil.xp || 0);
+    const tempoTopGlobal = Number(perfil.tempo_top_global_segundos || 0);
+    const temporadaGlobal = conteudo.temporada_global || {};
+    const inicioTemporada = Number(temporadaGlobal.inicio_timestamp || 0);
+    const duracaoTemporadaDias = Math.max(1, Number(temporadaGlobal.duracao_dias || 30));
+    const fimTemporada = inicioTemporada
+      ? inicioTemporada + duracaoTemporadaDias * 86400
+      : 0;
+    const segundosRestantesTemporada = inicioTemporada
+      ? Math.max(0, fimTemporada - Math.floor(Date.now() / 1000))
+      : duracaoTemporadaDias * 86400;
 
     const vitorias =
       Number(perfil.vitorias || 0);
@@ -118,12 +131,14 @@ exports.handler = async function (event) {
       perfis
         .map((p) => ({
           discordId: p.discordId,
-          pontos: Number(p.pontos || 0),
+          pontos: Number(p.pontos_temporada ?? p.pontos ?? 0),
+          vitorias: Number(p.vitorias || 0),
           elo: Number(p.elo || 1000)
         }))
         .sort(
           (a, b) =>
             b.pontos - a.pontos ||
+            b.vitorias - a.vitorias ||
             b.elo - a.elo
         );
 
@@ -167,16 +182,36 @@ exports.handler = async function (event) {
         avatar,
         cargo,
         pontos,
+        pontosTotais,
         pc: pontos,
+        xp,
         vitorias,
         derrotas,
         elo,
+        tempoTopGlobal,
+        temporada: {
+          numero: Number(temporadaGlobal.numero || 1),
+          inicio: inicioTemporada,
+          fim: fimTemporada,
+          duracaoDias: duracaoTemporadaDias,
+          segundosRestantes: segundosRestantesTemporada
+        },
         rank: calcularRank(elo)
       },
 
       estatisticas: {
         pontos,
+        pontosTotais,
         pc: pontos,
+        xp,
+        tempoTopGlobal,
+        temporada: {
+          numero: Number(temporadaGlobal.numero || 1),
+          inicio: inicioTemporada,
+          fim: fimTemporada,
+          duracaoDias: duracaoTemporadaDias,
+          segundosRestantes: segundosRestantesTemporada
+        },
         vitorias,
         derrotas,
         taxa,
