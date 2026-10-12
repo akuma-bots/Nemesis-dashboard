@@ -23,6 +23,10 @@ def _perfil_vazio(discord_id: str, nome: str) -> dict:
         "elo": 1000,
         "vitorias": 0,
         "derrotas": 0,
+        "xp": 0,
+        "pontos_temporada": 0,
+        "tempo_top_global_segundos": 0,
+        "em_top_global": False,
     }
 
 
@@ -30,7 +34,14 @@ async def somar_pontos(discord_id: str, nome: str, pontos: int) -> dict:
     """Soma pontos no perfil de alguém no ranking (site). Não mexe no catálogo."""
     dados = await _carregar()
     perfil = dados["perfis"].get(discord_id) or _perfil_vazio(discord_id, nome)
-    perfil["pontos"] = perfil.get("pontos", 0) + pontos
+    pontos_anteriores = int(perfil.get("pontos", 0) or 0)
+    perfil["pontos"] = pontos_anteriores + int(pontos)
+    perfil["pontos_temporada"] = (
+        int(perfil.get("pontos_temporada", pontos_anteriores) or 0)
+        + int(pontos)
+    )
+    perfil.setdefault("tempo_top_global_segundos", 0)
+    perfil.setdefault("em_top_global", False)
     perfil["nome"] = nome or perfil.get("nome")
     dados["perfis"][discord_id] = perfil
     await salvar(ARQUIVO, dados)
