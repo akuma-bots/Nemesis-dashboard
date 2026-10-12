@@ -271,9 +271,10 @@ exports.handler = async (event) => {
     // Não corta descrições silenciosamente: aceita até 20.000 caracteres
     // e retorna um erro explícito se o painel enviar mais do que o permitido.
     for (const formulario of corpo.formularios) {
+      // Validar o mesmo campo que será salvo, respeitando a prioridade do editor.
       const descricao = String(
-        formulario?.descricao ??
-        formulario?.descricao_painel ??
+        formulario?.descricao ||
+        formulario?.descricao_painel ||
         ""
       );
       if (descricao.length > 20000) {
