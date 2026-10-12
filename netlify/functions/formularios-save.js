@@ -268,6 +268,21 @@ exports.handler = async (event) => {
           ]
         : [];
 
+    // Não corta descrições silenciosamente: aceita até 20.000 caracteres
+    // e retorna um erro explícito se o painel enviar mais do que o permitido.
+    for (const formulario of corpo.formularios) {
+      const descricao = String(
+        formulario?.descricao ??
+        formulario?.descricao_painel ??
+        ""
+      );
+      if (descricao.length > 20000) {
+        return json(400, {
+          erro: "A descrição de cada formulário pode ter no máximo 20.000 caracteres.",
+        });
+      }
+    }
+
     const enviados =
       corpo.formularios.map(
         normalizarFormularioDashboard
