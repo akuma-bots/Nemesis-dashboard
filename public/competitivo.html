@@ -52,6 +52,9 @@
   <a class="voltar" href="/">← Voltar pra home</a>
   <h1 class="wordmark">Sistema de Ranking</h1>
   <p class="subtitulo">A pontuação representa o desempenho, a atividade e a participação de cada membro dentro da NÊMESIS. O Elo indica o nível competitivo.</p>
+  <div id="temporada-atual" style="margin-top:20px;padding:18px 20px;border:1px solid var(--line);background:var(--panel);font-family:'Audiowide',sans-serif;font-size:.85rem;letter-spacing:.03em;">
+    Carregando temporada global…
+  </div>
 
   <h2 class="secao">Como ganhar pontuação</h2>
   <div class="grade-catalogo" id="catalogo-pontos"><p class="carregando">Carregando…</p></div>
@@ -69,10 +72,10 @@
   <div class="tabela-scroll">
     <table class="ranking">
       <thead>
-        <tr><th>#</th><th>Membro</th><th>Pontuação</th><th>Elo</th><th>Rank</th><th>V</th><th>D</th><th>K/D</th></tr>
+        <tr><th>#</th><th>Membro</th><th>Pontos da temporada</th><th>XP</th><th>Elo</th><th>Rank</th><th>Vitórias</th><th>Derrotas</th><th>K/D</th><th>Tempo no Top 10</th></tr>
       </thead>
       <tbody id="corpo-ranking">
-        <tr><td colspan="8" class="carregando">Carregando…</td></tr>
+        <tr><td colspan="10" class="carregando">Carregando…</td></tr>
       </tbody>
     </table>
   </div>
@@ -82,6 +85,16 @@
 <script>
   function escaparHtml(texto){
     return String(texto ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function formatarTempoTop(segundos) {
+    const totalMinutos = Math.floor(Math.max(0, Number(segundos || 0)) / 60);
+    const dias = Math.floor(totalMinutos / 1440);
+    const horas = Math.floor((totalMinutos % 1440) / 60);
+    const minutos = totalMinutos % 60;
+    if (dias > 0) return `${dias}d ${horas}h`;
+    if (horas > 0) return `${horas}h ${minutos}min`;
+    return `${minutos}min`;
   }
 
   function carregarCompetitivo(primeiraVez){
@@ -118,20 +131,34 @@
           });
         }
 
+        const temporadaEl = document.getElementById('temporada-atual');
+        if (temporadaEl && d.temporada) {
+          const segundos = Math.max(0, Number(d.temporada.segundosRestantes || 0));
+          const dias = Math.floor(segundos / 86400);
+          const horas = Math.floor((segundos % 86400) / 3600);
+          const minutos = Math.floor((segundos % 3600) / 60);
+          const fim = d.temporada.fim
+            ? new Date(d.temporada.fim * 1000).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+            : 'iniciando';
+          temporadaEl.innerHTML = `TEMPORADA GLOBAL #${Number(d.temporada.numero || 1)} <span style="color:var(--steel);font-family:'Rajdhani',sans-serif;">— reinicia em ${dias}d ${horas}h ${minutos}min · término previsto: ${escaparHtml(fim)}</span>`;
+        }
+
         const corpo = document.getElementById('corpo-ranking');
         if (!d.ranking.length) {
-          corpo.innerHTML = '<tr><td colspan="8" class="vazio">Ninguém no ranking ainda.</td></tr>';
+          corpo.innerHTML = '<tr><td colspan="10" class="vazio">Ninguém no ranking ainda.</td></tr>';
         } else {
           corpo.innerHTML = d.ranking.map((r, i) => `
             <tr>
               <td class="pos">#${i + 1}</td>
               <td>${escaparHtml(r.nome)}</td>
-              <td>${r.pontos.toLocaleString('pt-BR')}</td>
-              <td>${r.elo.toLocaleString('pt-BR')}</td>
-              <td>${r.rank}</td>
-              <td>${r.vitorias}</td>
-              <td>${r.derrotas}</td>
-              <td>${r.kd}</td>
+              <td>${Number(r.pontos || 0).toLocaleString('pt-BR')}</td>
+              <td>${Number(r.xp || 0).toLocaleString('pt-BR')}</td>
+              <td>${Number(r.elo || 0).toLocaleString('pt-BR')}</td>
+              <td>${escaparHtml(r.rank)}</td>
+              <td>${Number(r.vitorias || 0).toLocaleString('pt-BR')}</td>
+              <td>${Number(r.derrotas || 0).toLocaleString('pt-BR')}</td>
+              <td>${escaparHtml(r.kd)}</td>
+              <td>${formatarTempoTop(r.tempoTopGlobal)}</td>
             </tr>
           `).join('');
         }
@@ -140,7 +167,7 @@
         if (aviso) aviso.textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
       })
       .catch(() => {
-        document.getElementById('corpo-ranking').innerHTML = '<tr><td colspan="8" class="vazio">Não deu pra carregar agora.</td></tr>';
+        document.getElementById('corpo-ranking').innerHTML = '<tr><td colspan="10" class="vazio">Não deu pra carregar agora.</td></tr>';
       });
   }
 
