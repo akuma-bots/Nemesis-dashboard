@@ -2,12 +2,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ñ - ÑÊMESIS</title>
+<title>N̷ - N̷ÊMESIS</title>
 <link rel="stylesheet" href="/tema-nemesis.css">
 </head><body><script>
 document.documentElement.classList.add('js');
 </script><header class="nx-nav" id="nav">  <a class="nx-marca" href="/">
-    Ñ - ÑÊMESIS
+    N̷ - N̷ÊMESIS
   </a>  <nav class="nx-links" id="links"><a href="#sistemas">Sistemas</a>
 
 <a href="perfil.html">
@@ -66,7 +66,7 @@ aria-label="Menu"
   </p>
 
   <h1 class="nx-titulo">
-    Ñ - ÑÊMESIS
+    N̷ - N̷ÊMESIS
   </h1>
 
   <div class="nx-ornamento">
@@ -98,7 +98,7 @@ aria-label="Menu"
     </a>
 
     <a
-      href="https://discord.gg/ZcRQHjZzQU"
+      href="https://discord.gg/WsfjRQPhAg"
       class="btn"
       target="_blank"
       rel="noopener"
@@ -342,8 +342,8 @@ aria-label="Menu"
     </h2>
 
     <p>
-      Gerencie tudo pelo navegador,
-      sem digitar comando nenhum.
+      Gerencie os sistemas pelo navegador, com uma interface centralizada.
+      Os indicadores são exibidos quando há dados reais disponíveis.
     </p>
 
     <a
@@ -361,7 +361,7 @@ aria-label="Menu"
     <div class="nx-mock-topo">
 
       <i></i>
-      Ñ - ÑÊMESIS BOT
+      N̷ - N̷ÊMESIS BOT
 
     </div>
 
@@ -388,9 +388,7 @@ aria-label="Menu"
             Membros
           </span>
 
-          <b id="m-membros">
-            0
-          </b>
+          <b id="m-membros">—</b>
 
         </div>
 
@@ -401,9 +399,7 @@ aria-label="Menu"
             Tickets
           </span>
 
-          <b id="m-tickets">
-            0
-          </b>
+          <b id="m-tickets">—</b>
 
         </div>
 
@@ -414,9 +410,7 @@ aria-label="Menu"
             Eventos
           </span>
 
-          <b id="m-eventos">
-            0
-          </b>
+          <b id="m-eventos">—</b>
 
         </div>
 
@@ -427,9 +421,7 @@ aria-label="Menu"
             Rank Up
           </span>
 
-          <b id="m-rankup">
-            0
-          </b>
+          <b id="m-rankup">—</b>
 
         </div>
 
@@ -650,7 +642,7 @@ aria-label="Menu"
 
         <a
           class="nx-no"
-          href="https://discord.gg/ZcRQHjZzQU"
+          href="https://discord.gg/WsfjRQPhAg"
           target="_blank"
           rel="noopener"
         >
@@ -786,7 +778,7 @@ aria-label="Menu"
   </a>
 
   <a
-    href="https://discord.gg/ZcRQHjZzQU"
+    href="https://discord.gg/WsfjRQPhAg"
     class="btn"
     target="_blank"
     rel="noopener"
@@ -797,7 +789,7 @@ aria-label="Menu"
 </div>
 
   </section></main><footer class="nx-rodape">  <span>
-    Ñ - ÑÊMESIS
+    N̷ - N̷ÊMESIS
   </span>  <span>
     Sistema de administração —
     transmissão criptografada
@@ -931,29 +923,11 @@ function contar(
 }
 
 
-contar(
-  'm-membros',
-  1284,
-  1400
-);
-
-contar(
-  'm-tickets',
-  12,
-  1000
-);
-
-contar(
-  'm-eventos',
-  8,
-  900
-);
-
-contar(
-  'm-rankup',
-  24,
-  1200
-);
+// Não apresentar métricas inventadas como se fossem dados reais.
+for (const id of ['m-membros', 'm-tickets', 'm-eventos', 'm-rankup']) {
+  const indicador = document.getElementById(id);
+  if (indicador) indicador.textContent = '—';
+}
 
 
 const canvas =
