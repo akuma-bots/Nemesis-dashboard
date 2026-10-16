@@ -63,3 +63,76 @@ a{ color:inherit; }
 .secao-titulo{ font-size:0.85rem; margin:22px 0 12px; color:var(--phosphor); text-transform:uppercase; letter-spacing:0.04em; }
 .descricao-aba{ color:var(--steel); font-size:0.82rem; margin-bottom:16px; }
 .ranking-pos{ color:var(--signal); font-weight:600; margin-right:6px; }
+
+
+/* Acessibilidade e uso em telas pequenas */
+button, .btn, .botao, input, select, textarea {
+  touch-action: manipulation;
+}
+button, .btn, .botao {
+  min-height: 42px;
+}
+input, select, textarea {
+  max-width: 100%;
+}
+@media (max-width: 720px) {
+  .topo {
+    padding: 14px 16px;
+    align-items: flex-start;
+  }
+  .layout {
+    flex-direction: column;
+    min-height: 0;
+  }
+  .barra-lateral {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 14px 16px;
+  }
+  .barra-lateral h3 {
+    margin-bottom: 8px;
+  }
+  .conteudo {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    padding: 16px;
+  }
+  .abas {
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+  .aba {
+    flex: 0 0 auto;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .linha-formulario {
+    flex-direction: column;
+    gap: 0;
+  }
+  .linha-formulario > * {
+    min-width: 0;
+    width: 100%;
+  }
+  .campo select, .campo input, .campo textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .lista-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 420px) {
+  .conteudo {
+    padding: 12px;
+  }
+  .lista-item {
+    padding: 10px;
+  }
+}
