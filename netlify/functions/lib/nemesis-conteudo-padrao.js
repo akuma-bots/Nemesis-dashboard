@@ -17,7 +17,7 @@ const PADRAO = {
         "Entre no servidor pra acompanhar a comunidade, os avisos e conversar com a equipe.",
 
       url:
-        "https://discord.gg/D4ZmMpht7",
+        "https://discord.gg/WsfjRQPhAg",
 
       rotulo:
         "Entrar no servidor",
