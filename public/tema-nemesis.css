@@ -188,3 +188,73 @@ table.ranking th,table.ranking td{border-bottom:1px solid var(--line)}
 .js .revelar{opacity:0;transform:translateY(28px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.7,.2,1)}
 .js .revelar.visivel{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.js .revelar{opacity:1;transform:none}}
+
+/* Refinamento global de usabilidade — NÊMESIS */
+:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 3px;
+}
+button, input, select, textarea, a {
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea {
+  max-width: 100%;
+}
+button, .btn, .botao {
+  min-height: 42px;
+}
+input, select, textarea {
+  accent-color: var(--white);
+}
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  border-radius: 2px;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--white);
+  box-shadow: 0 0 0 2px rgba(244,241,234,.08);
+}
+button:disabled, .btn:disabled, .botao:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+  transform: none;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+table th {
+  text-align: left;
+  color: var(--steel);
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+table th, table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  .pagina, main.pagina {
+    padding: 108px 18px 64px;
+  }
+  .pagina h1 {
+    font-size: clamp(1.55rem, 7vw, 2.4rem);
+    overflow-wrap: anywhere;
+  }
+  .btn, .botao {
+    max-width: 100%;
+    padding: 13px 18px;
+    letter-spacing: .12em;
+  }
+  .linha-formulario, .nx-tech {
+    gap: 16px;
+  }
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
